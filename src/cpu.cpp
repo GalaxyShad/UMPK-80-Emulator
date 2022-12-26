@@ -434,39 +434,44 @@ void Cpu::_cpi() {
 
 // Rotate accumulator instructions
 void Cpu::_rlc() { 
-    throw std::logic_error("Not implemented");
-
-    // _regFlag.carry = (_regA & 0b10000000);
-    // _regA = _regA << 1;
+    _regFlag.carry = (_regA & 0b10000000) >> 7;
+    _regA = (_regA << 1) | _regFlag.carry;
 }
 
 
 void Cpu::_rrc() { 
-    throw std::logic_error("Not implemented");
-
-    // _regFlag.carry = (_regA & 0b00000001);
-    // _regA = _regA >> 1;
+    _regFlag.carry = _regA & 0b1;
+    _regA = (_regA >> 1) | (_regFlag.carry << 7);
 }
 
 
 void Cpu::_ral() { 
-    throw std::logic_error("Not implemented");
-
-    // _regA = _regA << 1;
+    uint8_t tempCarry = _regFlag.carry;
+    _regFlag.carry = (_regA & 0b10000000) >> 7;
+    _regA = (_regA << 1) | tempCarry;
 }
 
 
 void Cpu::_rar() { 
-    throw std::logic_error("Not implemented");
-
-    // _regA = _regA >> 1;
+    uint8_t tempCarry = _regFlag.carry;
+    _regFlag.carry = (_regA & 0b1);
+    _regA = (_regA << 1) | (tempCarry << 7);
 }
 
 // Register pair instructions
 void Cpu::_push() {
     uint8_t regPairCode = (_regCmd & 0b00110000) >> 4;
 
-    // TODO A and Flags Store
+    // Flags and A store
+    if (regPairCode == 0b11) {
+        uint8_t  flags = *((uint8_t*)&_regFlag); 
+        uint16_t fa = (flags << 8) | _regA;
+
+        _stackPush(fa);
+
+        return;
+    }
+    
     uint16_t data = _getRegPairData(regPairCode);
     _stackPush(data);
 }
@@ -476,6 +481,15 @@ void Cpu::_pop() {
     uint8_t regPairCode = (_regCmd & 0b00110000) >> 4;
 
     uint16_t data = _stackPop();
+
+    // Flags and A read
+    if (regPairCode == 0b11) {
+        *((uint8_t*)&_regFlag) = data >> 8;
+        _regA = (uint8_t)data;
+
+        return;
+    }
+    
     _setRegPairData(regPairCode, data);
 }
 
@@ -524,8 +538,14 @@ void Cpu::_xchg() {
 }
 
 
-void Cpu::_xthl() { throw std::logic_error("Not implemented"); }
-void Cpu::_sphl() { throw std::logic_error("Not implemented"); }
+void Cpu::_xthl() { 
+
+}
+
+
+void Cpu::_sphl() { 
+
+}
 
 // Direct adressing instructions
 void Cpu::_sta() { 
@@ -624,7 +644,11 @@ void Cpu::_di() { throw std::logic_error("Not implemented"); }
 
 // IO instructions
 void Cpu::_in()  { 
-    throw std::logic_error("Not implemented"); 
+    uint8_t port = _memoryRead();
+    printf("PORT = 0x%02x data required >> ", port);
+
+    scanf("%x", &_regA);
+    // throw std::logic_error("Not implemented"); 
 }
 void Cpu::_out() { 
     uint8_t port = _memoryRead();

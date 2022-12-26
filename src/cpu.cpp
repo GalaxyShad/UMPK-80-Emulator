@@ -527,24 +527,31 @@ void Cpu::_dcx() {
 
 
 void Cpu::_xchg() {
-    uint8_t x = _regH;
-    uint8_t y = _regL;
+    uint8_t h = _regH;
+    uint8_t l = _regL;
 
     _regH = _regD;
     _regL = _regE;
 
-    _regD = x;
-    _regE = y;
+    _regD = h;
+    _regE = l;
 }
 
 
 void Cpu::_xthl() { 
+    uint8_t h = _regH;
+    uint8_t l = _regL;
 
+    _regL = _bus.read(_stackPointer);
+    _regH = _bus.read(_stackPointer+1);
+
+    _bus.write(_stackPointer,   l);
+    _bus.write(_stackPointer+1, h);
 }
 
 
 void Cpu::_sphl() { 
-
+    _stackPointer = (_regH << 8) | _regL;
 }
 
 // Direct adressing instructions

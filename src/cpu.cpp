@@ -30,8 +30,8 @@ void Cpu::_readCommand() {
     instructionFunction_t instruction = _instructions[opcode];
 
     if (instruction == nullptr) {
-        printf("%x\n", _prgCounter);
-        throw std::logic_error(std::to_string(opcode) + " Unexisting command");
+        printf("%04x: %02x\n", _prgCounter, opcode);
+        throw std::logic_error("Unexisting command");
     }
 
     _regCmd = opcode;
@@ -58,10 +58,11 @@ uint8_t Cpu::_memoryRead() {
 
 
 void Cpu::_stackPush(uint16_t data) {
-    _bus.write(_stackPointer, (uint8_t)data);
+    _stackPointer--;
     _bus.write(_stackPointer, (uint8_t)(data >> 8));
 
-    _stackPointer -= 2;
+    _stackPointer--;
+    _bus.write(_stackPointer, (uint8_t)(data));
 }
 
 
@@ -69,7 +70,7 @@ uint16_t Cpu::_stackPop() {
     uint16_t data = _bus.read(_stackPointer);
     _stackPointer++;
 
-    data = (data << 8) | _bus.read(_stackPointer);
+    data = (_bus.read(_stackPointer) << 8) | data;
     _stackPointer++;
 
     return data;
@@ -77,12 +78,12 @@ uint16_t Cpu::_stackPop() {
 
 
 void Cpu::_portWrite(uint8_t port, uint8_t data) {
-    throw std::logic_error("Not implemented");
+    _bus.portWrite(port, data);
 }
 
 
 uint8_t Cpu::_portRead(uint8_t port) {
-    throw std::logic_error("Not implemented");
+    return _bus.portRead(port);
 }
 
 
@@ -110,9 +111,9 @@ uint16_t Cpu::_getRegPairData(uint8_t regPairCode) {
     uint16_t data = 0x0000;
 
     switch (regPairCode) {
-        case 0b00: data = (_regB << 8) | _regC; break;
-        case 0b01: data = (_regD << 8) | _regE; break;
-        case 0b10: data = (_regH << 8) | _regL; break;
+        case 0b00: data = ((uint16_t)_regB << 8) | _regC; break;
+        case 0b01: data = ((uint16_t)_regD << 8) | _regE; break;
+        case 0b10: data = ((uint16_t)_regH << 8) | _regL; break;
         case 0b11: data = _stackPointer;        break;
         default:   throw std::logic_error("Unexisting register pair code");
     }
@@ -200,7 +201,7 @@ void Cpu::_cma() {
 
 
 void Cpu::_daa() { 
-    throw std::logic_error("Not implemented"); 
+    throw std::logic_error("DAA instruction is not implemented"); 
 }
 
 
@@ -336,7 +337,8 @@ void Cpu::_cmp() {
 void Cpu::_lxi() { 
     uint8_t regPairCode = (_regCmd & 0b00110000) >> 4;
 
-    uint16_t adr = _memoryRead() | (_memoryRead() << 8);
+    uint8_t  lowAdr = _memoryRead();
+    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
 
     _setRegPairData(regPairCode, adr);
 }
@@ -455,7 +457,7 @@ void Cpu::_ral() {
 void Cpu::_rar() { 
     uint8_t tempCarry = _regFlag.carry;
     _regFlag.carry = (_regA & 0b1);
-    _regA = (_regA << 1) | (tempCarry << 7);
+    _regA = (_regA >> 1) | (tempCarry << 7);
 }
 
 // Register pair instructions
@@ -503,6 +505,8 @@ void Cpu::_dad() {
     uint32_t res  = data + hl;
 
     _regFlag.carry = res & 0xFFFF0000;
+
+    _setRegPairData(0b10, (uint16_t)res);
 }
 
 
@@ -570,11 +574,26 @@ void Cpu::_lda() {
 }
 
 
-void Cpu::_shld() { throw std::logic_error("Not implemented"); }
-void Cpu::_lhld() { throw std::logic_error("Not implemented"); }
+void Cpu::_shld() { 
+    uint8_t  lowAdr = _memoryRead();
+    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
+
+    _bus.write(adr,   _regL);
+    _bus.write(adr+1, _regH);
+}
+
+void Cpu::_lhld() { 
+    uint8_t  lowAdr = _memoryRead();
+    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
+
+    _regL = _bus.read(adr);
+    _regH = _bus.read(adr+1);
+}
 
 // Jump instructions
-void Cpu::_pchl() { throw std::logic_error("Not implemented"); }
+void Cpu::_pchl() { 
+    _prgCounter = (_regH << 8) | _regL;
+}
 
 
 void Cpu::_jmp(bool cond) { 
@@ -646,21 +665,18 @@ void Cpu::_rst() {
 }
 
 // Interrupt Flip-Flop instructions
-void Cpu::_ei() { throw std::logic_error("Not implemented"); }
-void Cpu::_di() { throw std::logic_error("Not implemented"); }
+void Cpu::_ei() { _interruptsEnabled = true; }
+void Cpu::_di() { _interruptsEnabled = false; }
 
 // IO instructions
 void Cpu::_in()  { 
     uint8_t port = _memoryRead();
-    printf("PORT = 0x%02x data required >> ", port);
-
-    scanf("%x", &_regA);
-    // throw std::logic_error("Not implemented"); 
+    _regA = _portRead(port);
 }
+
 void Cpu::_out() { 
     uint8_t port = _memoryRead();
-    printf("PORT = 0x%02x OUT = 0x%02x\n", port, _regA);
-    // throw std::logic_error("Not implemented"); 
+    _portWrite(port, _regA);
 }
 
 // Hlt instruction

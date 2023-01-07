@@ -5,6 +5,10 @@
 #include "bus.hpp"
 
 
+struct CpuFlagsMapping { 
+    uint8_t sign: 1, zero: 1, :1, auxcarry: 1, :1,  parry: 1, :1, carry: 1; 
+};
+
 class Cpu {
     public:
         Cpu(Bus& bus);
@@ -14,12 +18,28 @@ class Cpu {
         bool    isHold() { return _hold; };
         void    setProgramCounter(uint16_t adr) { _prgCounter = adr; };
 
-    //private:
+        uint8_t  getCommandRegister()   { return _regCmd;       }
+        uint16_t getAdressRegister()    { return _regAdr;       }
+        uint16_t getStackPointer()      { return _stackPointer; }
+        uint16_t getProgramCounter()    { return _prgCounter;   }
+        CpuFlagsMapping getFlags()      { return _regFlag;      }
+
+        enum Register {
+            B, C,
+            D, E,
+            H, L,
+            M, A
+        };
+
+        uint8_t getRegister(Register reg) { return _getRegData((uint8_t)reg); }
+
+    private:
         Bus&  _bus;
 
-        bool        _enableInterrupts = false;
+        bool        _enableInterrupts  = false;
 
-        bool        _hold = false;
+        bool        _hold              = false;
+        bool        _interruptsEnabled = false;
 
         uint8_t     _regCmd         = 0x00;
         uint16_t    _regAdr         = 0x0000;
@@ -38,7 +58,7 @@ class Cpu {
             NULL,   &_regA, 
         };
 
-        struct { uint8_t sign: 1, zero: 1, :1, auxcarry: 1, :1,  parry: 1, :1, carry: 1; } _regFlag;
+        CpuFlagsMapping _regFlag;
         
         typedef void (Cpu::*instructionFunction_t)(void); 
         #define UNKI    nullptr

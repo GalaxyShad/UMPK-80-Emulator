@@ -4,12 +4,13 @@
 
 #include "bus.hpp"
 
-#define DISPLAY_PORT_SEGMENT     0x07
-#define DISPLAY_PORT_DATA        0x06
-
-// #define DISPLAY_PORT_SEGMENT     0x28
-// #define DISPLAY_PORT_DATA        0x38
-
+#ifdef EMULATE_OLD_UMPK
+    #define DISPLAY_PORT_SEGMENT     0x28
+    #define DISPLAY_PORT_DATA        0x38
+#else
+    #define DISPLAY_PORT_SEGMENT     0x07
+    #define DISPLAY_PORT_DATA        0x06
+#endif
 class Display {
     public:
         Display(Bus& bus) : _bus(bus) {};

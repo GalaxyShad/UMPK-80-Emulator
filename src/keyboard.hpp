@@ -2,11 +2,15 @@
 
 #include "bus.hpp"
 
-#define KEYBOARD_PORT_SCAN     0x07
-#define KEYBOARD_PORT_OUT      0x06
 
-// #define KEYBOARD_PORT_SCAN     0x28
-// #define KEYBOARD_PORT_OUT      0x18
+#ifdef EMULATE_OLD_UMPK
+    #define KEYBOARD_PORT_SCAN     0x28
+    #define KEYBOARD_PORT_OUT      0x18
+#else
+    #define KEYBOARD_PORT_SCAN     0x07
+    #define KEYBOARD_PORT_OUT      0x06
+#endif
+
 
 
 class Keyboard {

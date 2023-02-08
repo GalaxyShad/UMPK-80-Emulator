@@ -146,7 +146,10 @@ void Cpu::_updateFlagsState(uint16_t result) {
     _regFlag.carry      = (result >> 8)  ? 0b1 : 0b0;  
     _regFlag.zero       = (data == 0x00) ? 0b1 : 0b0;
     _regFlag.sign       = (data >> 7) & 0b1;
+
+    //https://retrocomputing.stackexchange.com/questions/11262/can-someone-explain-this-algorithm-used-to-compute-the-auxiliary-carry-flag
     _regFlag.auxcarry   = (result >> 4)  ? 0b1 : 0b0;
+   
     
     uint8_t p = data;
     p ^= p >> 4;
@@ -201,6 +204,25 @@ void Cpu::_cma() {
 
 
 void Cpu::_daa() { 
+    // uint8_t aLow  = _regA & 0x0F; 
+    
+
+    // uint16_t res = aLow;
+
+    // if (aLow > 0x09 || _regFlag.auxcarry) {
+    //     res += 0x06;
+    //     _updateFlagsState(res);
+
+    //     _regA = _regA | (uint8_t)res;
+    //     uint8_t aHigh = (_regA & 0xF0) >> 4;
+
+    //     if (aHigh > 0x09 || _regFlag.carry) {
+    //         aHigh += 0x06;
+    //         _regA = (aHigh << 4) | _regA;
+    //     }
+
+    // } 
+
     throw std::logic_error("DAA instruction is not implemented"); 
 }
 
@@ -467,9 +489,9 @@ void Cpu::_push() {
     // Flags and A store
     if (regPairCode == 0b11) {
         uint8_t  flags = *((uint8_t*)&_regFlag); 
-        uint16_t fa = (flags << 8) | _regA;
+        uint16_t af =  (_regA << 8) | flags;
 
-        _stackPush(fa);
+        _stackPush(af);
 
         return;
     }
@@ -486,8 +508,8 @@ void Cpu::_pop() {
 
     // Flags and A read
     if (regPairCode == 0b11) {
-        *((uint8_t*)&_regFlag) = data >> 8;
-        _regA = (uint8_t)data;
+        *((uint8_t*)&_regFlag) = (uint8_t)data;
+        _regA = data >> 8;
 
         return;
     }

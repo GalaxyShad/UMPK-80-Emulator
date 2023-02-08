@@ -4,11 +4,51 @@
 #include <chrono>
 #include <iostream>
 
+#include <SFML/Audio.hpp>
+#include <cmath>
+
+// #define EMULATE_OLD_UMPK
+
 #include "bus.hpp"
 #include "cpu.hpp"
 #include "display.hpp"
 #include "disassembler.hpp"
 #include "keyboard.hpp"
+
+#ifdef EMULATE_OLD_UMPK
+    #define OS_FILE "../data/old.bin"
+#else
+    #define OS_FILE "../data/scaned-os.bin"
+#endif
+
+
+#define TWOPI 6.283185307
+
+short SquareWave(double time, double freq, double amp) {
+    if (freq == 0) return 0;
+
+
+    short result = 0;
+    int tpc = 44100 / freq; // ticks per cycle
+    int cyclepart = int(time) % tpc;
+    int halfcycle = tpc / 2;
+    short amplitude = 32767 * amp;
+    if (cyclepart < halfcycle) {
+        result = amplitude;
+    }
+    return result;
+}
+
+short SineWave(double time, double freq, double amp) {
+    short result;
+    double tpc = 44100 / freq; // ticks per cycle
+    double cycles = time / tpc;
+    double rad = TWOPI * cycles;
+    short amplitude = 32767 * amp;
+    result = amplitude * sin(rad);
+    return result;
+}
+
 
 class Controller {
     public:
@@ -17,6 +57,11 @@ class Controller {
             _cpuThread(_cpuWork, this)
         {
             _loadSystem();
+            // _greenHill();
+
+            // _disasm.reset(0x055A);
+            // for (int i = 0; i < 256; i++)
+            //     std::cout << _disasm.translate() << std::endl;
         };
 
         void onBtnStart() {
@@ -69,14 +114,203 @@ class Controller {
         Disassembler _disasm;
         Keyboard _keyboard;
 
+        // Sound
+        sf::SoundBuffer sndBuffer;
+        int sndBufferCounter = 0;
+        std::vector<sf::Int16> samples;
+        sf::Sound sound;
+
+        bool _isScnaning04Port = false;
+
 
         std::thread _cpuThread;
 
         bool _isCpuRunning = false;
 
+        void _greenHill() {
+            #define NOTE_B0  31
+            #define NOTE_C1  33
+            #define NOTE_CS1 35
+            #define NOTE_D1  37
+            #define NOTE_DS1 39
+            #define NOTE_E1  41
+            #define NOTE_F1  44
+            #define NOTE_FS1 46
+            #define NOTE_G1  49
+            #define NOTE_GS1 52
+            #define NOTE_A1  55
+            #define NOTE_AS1 58
+            #define NOTE_B1  62
+            #define NOTE_C2  65
+            #define NOTE_CS2 69
+            #define NOTE_D2  73
+            #define NOTE_DS2 78
+            #define NOTE_E2  82
+            #define NOTE_F2  87
+            #define NOTE_FS2 93
+            #define NOTE_G2  98
+            #define NOTE_GS2 104
+            #define NOTE_A2  110
+            #define NOTE_AS2 117
+            #define NOTE_B2  123
+            #define NOTE_C3  131
+            #define NOTE_CS3 139
+            #define NOTE_D3  147
+            #define NOTE_DS3 156
+            #define NOTE_E3  165
+            #define NOTE_F3  175
+            #define NOTE_FS3 185
+            #define NOTE_G3  196
+            #define NOTE_GS3 208
+            #define NOTE_A3  220
+            #define NOTE_AS3 233
+            #define NOTE_B3  247
+            #define NOTE_C4  262
+            #define NOTE_CS4 277
+            #define NOTE_D4  294
+            #define NOTE_DS4 311
+            #define NOTE_E4  330
+            #define NOTE_F4  349
+            #define NOTE_FS4 370
+            #define NOTE_G4  392
+            #define NOTE_GS4 415
+            #define NOTE_A4  440
+            #define NOTE_AS4 466
+            #define NOTE_B4  494
+            #define NOTE_C5  523
+            #define NOTE_CS5 554
+            #define NOTE_D5  587
+            #define NOTE_DS5 622
+            #define NOTE_E5  659
+            #define NOTE_F5  698
+            #define NOTE_FS5 740
+            #define NOTE_G5  784
+            #define NOTE_GS5 831
+            #define NOTE_A5  880
+            #define NOTE_AS5 932
+            #define NOTE_B5  988
+            #define NOTE_C6  1047
+            #define NOTE_CS6 1109
+            #define NOTE_D6  1175
+            #define NOTE_DS6 1245
+            #define NOTE_E6  1319
+            #define NOTE_F6  1397
+            #define NOTE_FS6 1480
+            #define NOTE_G6  1568
+            #define NOTE_GS6 1661
+            #define NOTE_A6  1760
+            #define NOTE_AS6 1865
+            #define NOTE_B6  1976
+            #define NOTE_C7  2093
+            #define NOTE_CS7 2217
+            #define NOTE_D7  2349
+            #define NOTE_DS7 2489
+            #define NOTE_E7  2637
+            #define NOTE_F7  2794
+            #define NOTE_FS7 2960
+            #define NOTE_G7  3136
+            #define NOTE_GS7 3322
+            #define NOTE_A7  3520
+            #define NOTE_AS7 3729
+            #define NOTE_B7  3951
+            #define NOTE_C8  4186
+            #define NOTE_CS8 4435
+            #define NOTE_D8  4699
+            #define NOTE_DS8 4978
+            #define REST      0
+
+            int tempo = 2;
+
+            int melody[] = {
+
+                // Gren Hill Zone - Sonic the Hedgehog
+                // Score available at https://musescore.com/user/248346/scores/461661
+                // Theme by Masato Nakamura, arranged by Teddy Mason
+                
+                REST,2, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+
+                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8, //7
+                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,2,
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //13
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8,
+                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8,
+                NOTE_E4,-1,
+                REST,8, NOTE_D4,8, NOTE_E4,8, NOTE_FS4,-1,
+
+                REST,8, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8, NOTE_F4,-1, //20
+                REST,8, NOTE_D4,8, NOTE_F4,8, NOTE_E4,-1, //end 1
+
+                //repeats from 1
+
+                REST,2, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+
+                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8, //7
+                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,2,
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+
+                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //13
+                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
+                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8,
+                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8,
+                NOTE_E4,-1,
+                REST,8, NOTE_D4,8, NOTE_E4,8, NOTE_FS4,-1,
+
+                REST,8, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8, NOTE_F4,-1, //20
+                REST,8, NOTE_D4,8, NOTE_F4,8, NOTE_E4,8, //end 2
+                NOTE_E4,-2, NOTE_A4,8, NOTE_CS5,8, 
+                NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8, NOTE_A5,-4,
+
+            };
+        
+            int notes = sizeof(melody) / sizeof(melody[0]) / 2;
+
+            // this calculates the duration of a whole note in ms
+            int wholenote = (60000 * 4) / tempo;
+
+            int divider = 0, noteDuration = 0;
+
+            for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
+
+                // calculates the duration of each note
+                divider = melody[thisNote + 1];
+                if (divider > 0) {
+                // regular note, just proceed
+                noteDuration = (wholenote) / divider;
+                } else if (divider < 0) {
+                // dotted notes are represented with negative durations!!
+                noteDuration = (wholenote) / abs(divider);
+                noteDuration *= 1.5; // increases the duration in half for dotted notes
+                }
+
+                // we only play the note for 90% of the duration, leaving 10% as a pause
+                _tone(melody[thisNote], noteDuration * 0.9);
+
+            }
+        
+        }
+        
         void _loadSystem() {
             // FILE* file = fopen("../data/old.bin", "rb");
-            FILE* file = fopen("../data/os.bin", "rb");
+            FILE* file = fopen(OS_FILE, "rb");
 
             if (!file) {
                 printf("Oh no, i can't open de file :(((((((");
@@ -91,22 +325,69 @@ class Controller {
             fclose(file);
         }
 
+        void _tone(double freq, int duration) {
+
+            for (int i = 0; i < duration; i++) {
+                // samples.push_back(SineWave(i, freq , 0.8));
+                samples.push_back(SquareWave(i, freq , 0.8));
+            }
+
+            sndBuffer.loadFromSamples(&samples[0], samples.size(), 1, 44100);
+            sound.setBuffer(sndBuffer);
+            sound.play();
+
+            while (sound.getStatus() == sound.Playing);
+
+            samples.clear();
+            sound.resetBuffer();
+        }
+
         void _tick() {
+
+
+            if (_cpu.getProgramCounter() == 0x0447) {
+                // _isScnaning04Port = true;
+
+                uint8_t d = _cpu.getRegister(Cpu::Register::D);
+                uint8_t b = 0xFF - _cpu.getRegister(Cpu::Register::B);
+                
+                // printf("freq = %02x; duration = %02x;\n", b, d);
+                _tone(b*2, d * 120);
+            }
+
+            // if (_cpu.getProgramCounter() == 0x0516) {
+            //     _isScnaning04Port = true;
+
+            //     uint8_t d = _cpu.getRegister(Cpu::Register::D);
+            //     _tone(d*3, 400);
+            // }
+
+            if (_cpu.getProgramCounter() == 0x0506) {
+                uint16_t delay = _cpu.getRegister(Cpu::Register::B);
+                delay = (delay << 8) | _cpu.getRegister(Cpu::Register::C);
+                
+                for (int i = 0; i < 0xF000 * delay; i++);
+            }
+
             _cpu.tick();
             _display.update();
             _keyboard.update();
         }
 
+
+         
         void _cpuWork() {
-
             while (true) {
-                // if (_cpu.getProgramCounter() == 0x3C2)
-                //     getchar();
-
-                if (_isCpuRunning)
+                
+                if (_isCpuRunning) {
                     _tick();
+                    
 
-                std::this_thread::sleep_for(std::chrono::microseconds(700));
+                    // Best delay ever
+                    for (int i = 0; i < 0x300; i++);
+                }
+                
+                // std::this_thread::sleep_for(std::chrono::microseconds(700));
             }
         }
 

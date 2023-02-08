@@ -24,12 +24,20 @@ class Disassembler {
             uint8_t opcode = _bus.read(_prgCounter);
 
             Instruction instruction = _instructions[opcode];
+
+            for (int i = 1; i < instruction.bytes; i++) {
+                char value[8];
+                sprintf(value, "%02x", _bus.read(_prgCounter+i));
+                instruction.name += " " + std::string(value);
+            }
+
             _prgCounter += instruction.bytes;
 
             return toUpper(instruction.name);
         }
 
         void reset() { _prgCounter = 0; } 
+        void reset(uint16_t prgCounter) { _prgCounter = prgCounter; } 
 
         uint8_t getInstructionBytes(uint8_t opcode) { return _instructions[opcode].bytes; }
         bool isEof() { return _prgCounter > 0xFFFF; }

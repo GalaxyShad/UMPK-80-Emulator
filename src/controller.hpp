@@ -18,7 +18,8 @@
 #ifdef EMULATE_OLD_UMPK
     #define OS_FILE "../data/old.bin"
 #else
-    #define OS_FILE "../data/scaned-os.bin"
+    // #define OS_FILE "../data/scaned-os.bin"
+    #define OS_FILE "scaned-os.bin"
 #endif
 
 
@@ -89,13 +90,22 @@ class Controller {
         void loadTest(uint8_t testNum) {
             _isCpuRunning = false;
 
+            // switch(testNum) {
+            //     case 1: _testLab1(); break;
+            //     case 2: _testLab2(); break;
+            //     case 3: _testLab3(); break;
+            //     case 4: _testLab4(); break;
+            //     case 5: _testLab5(); break;
+            //     case 6: _testLab6(); break;
+            // }
+
             switch(testNum) {
-                case 1: _testLab1(); break;
-                case 2: _testLab2(); break;
-                case 3: _testLab3(); break;
-                case 4: _testLab4(); break;
-                case 5: _testLab5(); break;
-                case 6: _testLab6(); break;
+                case 1: _loadProgramFromFile("1.i8080asm.bin"); break;
+                case 2: _loadProgramFromFile("2.i8080asm.bin"); break;
+                case 3: _loadProgramFromFile("3.i8080asm.bin"); break;
+                case 4: _loadProgramFromFile("4.i8080asm.bin"); break;
+                case 5: _loadProgramFromFile("5.i8080asm.bin"); break;
+                case 6: _loadProgramFromFile("6.i8080asm.bin"); break;
             }
 
             _isCpuRunning = true;
@@ -313,7 +323,7 @@ class Controller {
             FILE* file = fopen(OS_FILE, "rb");
 
             if (!file) {
-                printf("Oh no, i can't open de file :(((((((");
+                printf("Oh no, i can't open de file :(((((((\n");
             }
 
             uint8_t data = 0x00;
@@ -322,6 +332,23 @@ class Controller {
                 _bus.write(i, data);
                 i++;
             }
+            fclose(file);
+        }
+
+        void _loadProgramFromFile(const char* filename) {
+            FILE* file = fopen(filename, "rb");
+
+            if (!file) {
+                printf("Oh no, i can't open de file \" %s \" :(((((((\n", filename);
+            }
+
+            uint8_t data = 0x00;
+            int i = 0;
+            while (fread(&data, 1, 1, file) == 1) {
+                _bus.write(0x0800+i, data);
+                i++;
+            }
+
             fclose(file);
         }
 

@@ -382,7 +382,7 @@ class View {
             ImGui::Begin("Tests");
 
             for (int i = 0; i < 6; i++) {
-                if (ImGui::Button(("EVM Lab #" + std::to_string(i+1)).c_str())) {
+                if (ImGui::Button((std::to_string(i+1) + ".i8080asm.bin").c_str())) {
                     _dataContext.loadTest(i+1);
                 }
             }

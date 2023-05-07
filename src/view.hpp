@@ -11,10 +11,11 @@
 #include "sfml-8seg-display.hpp"
 
 #include "controller.hpp"
+#include "viewcontrol.hpp"
 
-class View {
+class View : public ViewControl {
     public:
-        View() {
+        View() : _dataContext(*this) {
             _window.create(sf::VideoMode(1280, 720), "UMPK-80 Emulator");
             ImGui::SFML::Init(_window);
             _applyTheme();
@@ -27,11 +28,20 @@ class View {
             }
         }
 
+        void errorMessageBox(const char* errMsg) {
+            
+            // ImGui::OpenPopup("Error");
+            _errMsg = errMsg;
+        }
+
         ~View() {
             ImGui::SFML::Shutdown();
         }
     private:
+
         Controller          _dataContext;
+
+        const char* _errMsg = nullptr;
 
         bool _port5[8] = { false };
 
@@ -43,39 +53,72 @@ class View {
         bool chboxesKeyboard[26] = {false};
 
         Sfml8SegmentDigit   _display[6] = {
-            { sf::Vector2f(64+48*0, 32) }, 
-            { sf::Vector2f(64+48*1, 32) }, 
-            { sf::Vector2f(64+48*2, 32) }, 
-            { sf::Vector2f(64+48*3, 32) }, 
-            { sf::Vector2f(64+48*5, 32) }, 
-            { sf::Vector2f(64+48*6, 32) }, 
+            { sf::Vector2f(48*0, 0) }, 
+            { sf::Vector2f(48*1, 0) }, 
+            { sf::Vector2f(48*2, 0) }, 
+            { sf::Vector2f(48*3, 0) }, 
+            { sf::Vector2f(48*5, 0) }, 
+            { sf::Vector2f(48*6, 0) }, 
         };
 
         void _update() {
             ImGui::SFML::Update(_window, _deltaClock.restart());
 
-            _windowCode();
-            _windowInPorts();
-            _windowOutPorts();
+            // _windowCode();
+            // _windowInPorts();
+            // _windowOutPorts();
             _windowControls();
-            _windowMemory();
-            _windowCpuInfo();
+            // _windowMemory();
+            // _windowCpuInfo();
             _windowKeyboard();
             _windowPort5();
-            _windowTests();
+            // _windowTests();
 
-            // ImGui::ShowDemoWindow();
+            ImGui::ShowDemoWindow();
 
-            _window.clear();
+            if (_errMsg)
+                ImGui::OpenPopup("Error");  //_dataContext.onBtnReset();
+
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+            if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("%s", _errMsg);
+                ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); _errMsg = nullptr; }
+                ImGui::SetItemDefaultFocus();
+                ImGui::EndPopup();
+            }
+
+            ImGui::Begin("Display");
+            sf::RenderTexture rt;
+            rt.create(336, 64);
 
             for (int i = 0; i < 6; i++) 
-                _display[i].draw(_window);
-            
+                _display[i].draw(rt);
+            rt.display();
+         
+            ImGui::SetNextItemWidth(-100);
+            ImGui::Image(rt); 
+
+            ImGui::End();
+
+            _window.clear();
             ImGui::SFML::Render(_window);
             _window.display();
 
+            
+
+
+
+            // for (int i = 0; i < 6; i++) 
+            //     _display[i].draw(_window);
+            
+
             for (int i = 0; i < 6; i++) {
-                _display[i].setValue(_dataContext.getDisplay().get(i));
+                _display[i].setValue(_dataContext.getDisplayDigit(i));
             }
         }
 
@@ -105,7 +148,8 @@ class View {
             if (ImGui::Button("Stop"))      _dataContext.onButtonStop();
             ImGui::SameLine();
 
-            if (ImGui::Button("Reset"))     _dataContext.onBtnReset();
+            if (ImGui::Button("Reset")) _dataContext.onBtnReset();
+
             ImGui::End();
         }
 
@@ -125,7 +169,7 @@ class View {
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
-                        ImGui::Text("%02x", _dataContext.getBus().read(row*16+column));
+                        // ImGui::Text("%02x", _dataContext.getBus().read(row*16+column));
                     }
                 }
                 ImGui::EndTable();
@@ -149,7 +193,7 @@ class View {
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
-                        ImGui::Text("%02x", _dataContext.getBus().getOutPortData(row*16+column));
+                        // ImGui::Text("%02x", _dataContext.getBus().getOutPortData(row*16+column));
                     }
                 }
                 ImGui::EndTable();
@@ -173,7 +217,7 @@ class View {
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
-                        ImGui::Text("%02x", _dataContext.getBus().portRead(row*16+column));
+                        // ImGui::Text("%02x", _dataContext.getBus().portRead(row*16+column));
                     }
                 }
                 ImGui::EndTable();
@@ -182,45 +226,45 @@ class View {
         }
 
         void _windowCode() {
-            ImGui::Begin("Code");
-            if (ImGui::BeginTable("Code", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("ADR");
-                ImGui::TableSetupColumn("BYTE");
-                ImGui::TableSetupColumn("ASM");
-                ImGui::TableHeadersRow();
+            // ImGui::Begin("Code");
+            // if (ImGui::BeginTable("Code", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            //     ImGui::TableSetupColumn("ADR");
+            //     ImGui::TableSetupColumn("BYTE");
+            //     ImGui::TableSetupColumn("ASM");
+            //     ImGui::TableHeadersRow();
 
-                _dataContext.getDisassembler().reset();
-                int cmdSleep = 1;
-                for (int row = 0; row < 0x0d00; row++) {
-                    ImGui::TableNextRow();
+            //     // _dataContext.getDisassembler().reset();
+            //     int cmdSleep = 1;
+            //     for (int row = 0; row < 0x0d00; row++) {
+            //         ImGui::TableNextRow();
 
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%04x", row);
+            //         ImGui::TableSetColumnIndex(0);
+            //         ImGui::Text("%04x", row);
 
-                    if (_dataContext.getCpu().getProgramCounter() == row)
-                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
+            //         if (_dataContext.getCpu().getProgramCounter() == row)
+            //             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
 
-                    ImGui::TableSetColumnIndex(1);
+            //         ImGui::TableSetColumnIndex(1);
 
-                    if (_dataContext.getCpu().getProgramCounter() == row)
-                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
+            //         if (_dataContext.getCpu().getProgramCounter() == row)
+            //             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
 
-                    uint8_t cmd = _dataContext.getBus().read(row);
-                    ImGui::Text("%02x", cmd);
+            //         uint8_t cmd = _dataContext.getBus().read(row);
+            //         ImGui::Text("%02x", cmd);
 
-                    ImGui::TableSetColumnIndex(2);
+            //         ImGui::TableSetColumnIndex(2);
 
-                    if (cmdSleep == 1) {
-                        cmdSleep = _dataContext.getDisassembler().getInstructionBytes(cmd);
-                        ImGui::Text(_dataContext.getDisassembler().translate().c_str());
-                    } else {
-                        ImGui::Text("");
-                        cmdSleep--;
-                    }
-                }
-                ImGui::EndTable();
-            }
-            ImGui::End();
+            //         if (cmdSleep == 1) {
+            //             cmdSleep = _dataContext.getDisassembler().getInstructionBytes(cmd);
+            //             ImGui::Text(_dataContext.getDisassembler().translate().c_str());
+            //         } else {
+            //             ImGui::Text("");
+            //             cmdSleep--;
+            //         }
+            //     }
+            //     ImGui::EndTable();
+            // }
+            // ImGui::End();
         }
 
         void _windowCpuInfo() {
@@ -240,7 +284,7 @@ class View {
                 ImGui::TableNextRow();
                 for (int c = 0; c < 8; c++) {
                     ImGui::TableSetColumnIndex(c);
-                    ImGui::Text("%02x", _dataContext.getCpu().getRegister((Cpu::Register)c));
+                    // ImGui::Text("%02x", _dataContext.getCpu().getRegister((Cpu::Register)c));
                 }
                 ImGui::EndTable();
             }
@@ -255,20 +299,20 @@ class View {
 
                 ImGui::TableNextRow();
 
-                CpuFlagsMapping flags = _dataContext.getCpu().getFlags();
+                // CpuFlagsMapping flags = _dataContext.getCpu().getFlags();
 
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%x", flags.carry);
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%x", flags.sign);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%x", flags.zero);
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%x", flags.auxcarry);
-                ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%x", flags.parry);
+                // ImGui::TableSetColumnIndex(0);
+                // ImGui::Text("%x", flags.carry);
+                // ImGui::TableSetColumnIndex(1);
+                // ImGui::Text("%x", flags.sign);
+                // ImGui::TableSetColumnIndex(2);
+                // ImGui::Text("%x", flags.zero);
+                // ImGui::TableSetColumnIndex(3);
+                // ImGui::Text("%x", flags.auxcarry);
+                // ImGui::TableSetColumnIndex(4);
+                // ImGui::Text("%x", flags.parry);
 
-                ImGui::EndTable();
+                // ImGui::EndTable();
             }
 
             if (ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -279,12 +323,12 @@ class View {
 
                 ImGui::TableNextRow();
 
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%04x", _dataContext.getCpu().getProgramCounter());
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%04x", _dataContext.getCpu().getStackPointer());
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%02x", _dataContext.getCpu().getCommandRegister());
+                // ImGui::TableSetColumnIndex(0);
+                // ImGui::Text("%04x", _dataContext.getCpu().getProgramCounter());
+                // ImGui::TableSetColumnIndex(1);
+                // ImGui::Text("%04x", _dataContext.getCpu().getStackPointer());
+                // ImGui::TableSetColumnIndex(2);
+                // ImGui::Text("%02x", _dataContext.getCpu().getCommandRegister());
                 
                 ImGui::EndTable();
             }
@@ -298,7 +342,7 @@ class View {
             );
 
             if (ImGui::Button("Set")) {
-                _dataContext.onSetProgramCounter(_inputValuePgCounter);
+                // _dataContext.onSetProgramCounter(_inputValuePgCounter);
             }
 
             ImGui::End();
@@ -310,36 +354,36 @@ class View {
             ImVec2 btnSize = ImVec2(32, 32);
 
             ImGui::Button(" ", btnSize); ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::R, ImGui::Button("R", btnSize));        ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::SHC, ImGui::Button("SHC", btnSize));    ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_C, ImGui::Button("C", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_D, ImGui::Button("D", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_E, ImGui::Button("E", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_F, ImGui::Button("F", btnSize));
+            _dataContext.onUmpkKeySet(Keyboard::Key::R, ImGui::Button("R", btnSize));        ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::SHC, ImGui::Button("SHC", btnSize));    ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_C, ImGui::Button("C", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_D, ImGui::Button("D", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_E, ImGui::Button("E", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_F, ImGui::Button("F", btnSize));
 
             ImGui::Button(" ", btnSize); ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::SHK, ImGui::Button("PrSch", btnSize));  ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::SHC, ImGui::Button("SHC", btnSize));    ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_8, ImGui::Button("8", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_9, ImGui::Button("9", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_A, ImGui::Button("A", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_B, ImGui::Button("B", btnSize));
+            _dataContext.onUmpkKeySet(Keyboard::Key::SHK, ImGui::Button("PrSch", btnSize));  ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::SHC, ImGui::Button("SHC", btnSize));    ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_8, ImGui::Button("8", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_9, ImGui::Button("9", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_A, ImGui::Button("A", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_B, ImGui::Button("B", btnSize));
 
-            _dataContext.getKeyboard().setKey(Keyboard::Key::ST, ImGui::Button("St", btnSize));      ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::OT_RG, ImGui::Button("OtRg", btnSize)); ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::OT_A, ImGui::Button("OtA", btnSize));   ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_4, ImGui::Button("4", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_5, ImGui::Button("5", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_6, ImGui::Button("6", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_7, ImGui::Button("7", btnSize));       
+            _dataContext.onUmpkKeySet(Keyboard::Key::ST, ImGui::Button("St", btnSize));      ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::OT_RG, ImGui::Button("OtRg", btnSize)); ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::OT_A, ImGui::Button("OtA", btnSize));   ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_4, ImGui::Button("4", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_5, ImGui::Button("5", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_6, ImGui::Button("6", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_7, ImGui::Button("7", btnSize));       
 
-            _dataContext.getKeyboard().setKey(Keyboard::Key::P, ImGui::Button("P", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::UM, ImGui::Button("Um", btnSize));    ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::ZP_UV, ImGui::Button("ZpUv", btnSize));  ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_0, ImGui::Button("0", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_1, ImGui::Button("1", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_2, ImGui::Button("2", btnSize));       ImGui::SameLine();
-            _dataContext.getKeyboard().setKey(Keyboard::Key::_3, ImGui::Button("3", btnSize));      
+            _dataContext.onUmpkKeySet(Keyboard::Key::P, ImGui::Button("P", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::UM, ImGui::Button("Um", btnSize));    ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::ZP_UV, ImGui::Button("ZpUv", btnSize));  ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_0, ImGui::Button("0", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_1, ImGui::Button("1", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_2, ImGui::Button("2", btnSize));       ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::_3, ImGui::Button("3", btnSize));      
 
             ImGui::End();
         }
@@ -349,7 +393,7 @@ class View {
 
 
             bool leds[8];
-            uint8_t inData = _dataContext.getBus().getOutPortData(0x05);
+            uint8_t inData = _dataContext.port5Out();
             for (int i = 0; i < 8; i++) {
                 leds[7-i] = (inData >> i) & 0b1;
             }
@@ -373,7 +417,7 @@ class View {
                 data |= temp << (8 - i - 1);
             }
 
-            _dataContext.getBus().portInWrite(0x05, data);
+            _dataContext.port5In(data);
 
             ImGui::End();
         }
@@ -383,12 +427,14 @@ class View {
 
             for (int i = 0; i < 6; i++) {
                 if (ImGui::Button((std::to_string(i+1) + ".i8080asm.bin").c_str())) {
-                    _dataContext.loadTest(i+1);
+                    // _dataContext.loadTest(i+1);
                 }
             }
 
             ImGui::End();
         }
+
+
 
         void _applyTheme() {
             ImGuiStyle& style = ImGui::GetStyle();

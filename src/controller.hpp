@@ -3,17 +3,18 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <mutex>
+#include <fstream>
 
 #include <SFML/Audio.hpp>
 #include <cmath>
 
 // #define EMULATE_OLD_UMPK
 
-#include "bus.hpp"
-#include "cpu.hpp"
-#include "display.hpp"
+#include "umpk80.hpp"
 #include "disassembler.hpp"
-#include "keyboard.hpp"
+#include "dj.hpp"
+#include "viewcontrol.hpp"
 
 #ifdef EMULATE_OLD_UMPK
     #define OS_FILE "../data/old.bin"
@@ -22,450 +23,191 @@
     #define OS_FILE "scaned-os.bin"
 #endif
 
-
-#define TWOPI 6.283185307
-
-short SquareWave(double time, double freq, double amp) {
-    if (freq == 0) return 0;
-
-
-    short result = 0;
-    int tpc = 44100 / freq; // ticks per cycle
-    int cyclepart = int(time) % tpc;
-    int halfcycle = tpc / 2;
-    short amplitude = 32767 * amp;
-    if (cyclepart < halfcycle) {
-        result = amplitude;
-    }
-    return result;
-}
-
-short SineWave(double time, double freq, double amp) {
-    short result;
-    double tpc = 44100 / freq; // ticks per cycle
-    double cycles = time / tpc;
-    double rad = TWOPI * cycles;
-    short amplitude = 32767 * amp;
-    result = amplitude * sin(rad);
-    return result;
-}
-
-
 class Controller {
     public:
-        Controller() : 
-            _cpu(_bus), _display(_bus), _disasm(_bus), _keyboard(_bus),
-            _cpuThread(_cpuWork, this)
-        {
-            _loadSystem();
-            // _greenHill();
-
-            // _disasm.reset(0x055A);
-            // for (int i = 0; i < 256; i++)
-            //     std::cout << _disasm.translate() << std::endl;
-        };
+        Controller(ViewControl& vc) : 
+            _umpkThread(_umpkWork, this),
+            view(vc)
+        {}
 
         void onBtnStart() {
-            _isCpuRunning = true;
+            _umpkMutex.lock();
+            _isUmpkFreezed = false;
+            _umpkMutex.unlock();
         }
         
         void onButtonStop() {
-            _isCpuRunning = false;
+            _umpkMutex.lock();
+            _isUmpkFreezed = true;
+            _umpkMutex.unlock();
         }
 
         void onBtnNextCommand() {
-            _tick();
+            _umpkMutex.lock();
+            _umpk.tick();
+            _umpkMutex.unlock();
         }
 
         void onBtnReset() {
-            _isCpuRunning = false;
-            _cpu.setProgramCounter(0x0000);
-            _isCpuRunning = true;
+            _umpkMutex.lock();
+            _umpk.restart();
+            _umpkMutex.unlock();
         }
 
-        void onSetProgramCounter(uint16_t value) {
-            _cpu.setProgramCounter(value);
+        uint8_t getDisplayDigit(int digit) {
+            // return 0;
+            return _umpk.getDisplayDigit(digit);
         }
 
-        void loadTest(uint8_t testNum) {
-            _isCpuRunning = false;
-
-            // switch(testNum) {
-            //     case 1: _testLab1(); break;
-            //     case 2: _testLab2(); break;
-            //     case 3: _testLab3(); break;
-            //     case 4: _testLab4(); break;
-            //     case 5: _testLab5(); break;
-            //     case 6: _testLab6(); break;
-            // }
-
-            switch(testNum) {
-                case 1: _loadProgramFromFile("1.i8080asm.bin"); break;
-                case 2: _loadProgramFromFile("2.i8080asm.bin"); break;
-                case 3: _loadProgramFromFile("3.i8080asm.bin"); break;
-                case 4: _loadProgramFromFile("4.i8080asm.bin"); break;
-                case 5: _loadProgramFromFile("5.i8080asm.bin"); break;
-                case 6: _loadProgramFromFile("6.i8080asm.bin"); break;
-            }
-
-            _isCpuRunning = true;
+        void onUmpkKeySet(Keyboard::Key key, bool value) {
+            _umpkMutex.lock();
+            (value == true) ? _umpk.pressKey(key) : _umpk.releaseKey(key);
+            _umpkMutex.unlock();
         }
 
-        Cpu& getCpu()                       { return _cpu;      }
-        Bus& getBus()                       { return _bus;      }
-        Display& getDisplay()               { return _display;  }
-        Disassembler& getDisassembler()     { return _disasm;   }
-        Keyboard&   getKeyboard()           { return _keyboard; }
+        uint8_t port5Out() {
+            // return 0;
+            return _umpk.port5OutGet();
+        }
+
+        void port5In(uint8_t data) {
+            // _umpkMutex.lock();
+            // _umpk.port5InSet(data);
+            // _umpkMutex.unlock();
+        }
+
+        Umpk80& getUmpk() { return _umpk; }
+
+        // void onSetProgramCounter(uint16_t value) {
+        //     _cpu.setProgramCounter(value);
+        // }
+
+        // void loadTest(uint8_t testNum) {
+        //     _isCpuRunning = false;
+
+        //     // switch(testNum) {
+        //     //     case 1: _testLab1(); break;
+        //     //     case 2: _testLab2(); break;
+        //     //     case 3: _testLab3(); break;
+        //     //     case 4: _testLab4(); break;
+        //     //     case 5: _testLab5(); break;
+        //     //     case 6: _testLab6(); break;
+        //     // }
+
+        //     switch(testNum) {
+        //         case 1: _loadProgramFromFile("1.i8080asm.bin"); break;
+        //         case 2: _loadProgramFromFile("2.i8080asm.bin"); break;
+        //         case 3: _loadProgramFromFile("3.i8080asm.bin"); break;
+        //         case 4: _loadProgramFromFile("4.i8080asm.bin"); break;
+        //         case 5: _loadProgramFromFile("5.i8080asm.bin"); break;
+        //         case 6: _loadProgramFromFile("6.i8080asm.bin"); break;
+        //     }
+
+        //     _isCpuRunning = true;
+        // }
+
 
     private:
-        Cpu _cpu;
-        Display _display;
-        Bus _bus;
-        Disassembler _disasm;
-        Keyboard _keyboard;
+        Umpk80 _umpk;
+        Dj dj;
 
-        // Sound
-        sf::SoundBuffer sndBuffer;
-        int sndBufferCounter = 0;
-        std::vector<sf::Int16> samples;
-        sf::Sound sound;
+        std::thread _umpkThread;
+        std::mutex  _umpkMutex;
 
-        bool _isScnaning04Port = false;
+        bool _isUmpkFreezed = true; 
+
+        ViewControl& view;
 
 
-        std::thread _cpuThread;
-
-        bool _isCpuRunning = false;
-
-        void _greenHill() {
-            #define NOTE_B0  31
-            #define NOTE_C1  33
-            #define NOTE_CS1 35
-            #define NOTE_D1  37
-            #define NOTE_DS1 39
-            #define NOTE_E1  41
-            #define NOTE_F1  44
-            #define NOTE_FS1 46
-            #define NOTE_G1  49
-            #define NOTE_GS1 52
-            #define NOTE_A1  55
-            #define NOTE_AS1 58
-            #define NOTE_B1  62
-            #define NOTE_C2  65
-            #define NOTE_CS2 69
-            #define NOTE_D2  73
-            #define NOTE_DS2 78
-            #define NOTE_E2  82
-            #define NOTE_F2  87
-            #define NOTE_FS2 93
-            #define NOTE_G2  98
-            #define NOTE_GS2 104
-            #define NOTE_A2  110
-            #define NOTE_AS2 117
-            #define NOTE_B2  123
-            #define NOTE_C3  131
-            #define NOTE_CS3 139
-            #define NOTE_D3  147
-            #define NOTE_DS3 156
-            #define NOTE_E3  165
-            #define NOTE_F3  175
-            #define NOTE_FS3 185
-            #define NOTE_G3  196
-            #define NOTE_GS3 208
-            #define NOTE_A3  220
-            #define NOTE_AS3 233
-            #define NOTE_B3  247
-            #define NOTE_C4  262
-            #define NOTE_CS4 277
-            #define NOTE_D4  294
-            #define NOTE_DS4 311
-            #define NOTE_E4  330
-            #define NOTE_F4  349
-            #define NOTE_FS4 370
-            #define NOTE_G4  392
-            #define NOTE_GS4 415
-            #define NOTE_A4  440
-            #define NOTE_AS4 466
-            #define NOTE_B4  494
-            #define NOTE_C5  523
-            #define NOTE_CS5 554
-            #define NOTE_D5  587
-            #define NOTE_DS5 622
-            #define NOTE_E5  659
-            #define NOTE_F5  698
-            #define NOTE_FS5 740
-            #define NOTE_G5  784
-            #define NOTE_GS5 831
-            #define NOTE_A5  880
-            #define NOTE_AS5 932
-            #define NOTE_B5  988
-            #define NOTE_C6  1047
-            #define NOTE_CS6 1109
-            #define NOTE_D6  1175
-            #define NOTE_DS6 1245
-            #define NOTE_E6  1319
-            #define NOTE_F6  1397
-            #define NOTE_FS6 1480
-            #define NOTE_G6  1568
-            #define NOTE_GS6 1661
-            #define NOTE_A6  1760
-            #define NOTE_AS6 1865
-            #define NOTE_B6  1976
-            #define NOTE_C7  2093
-            #define NOTE_CS7 2217
-            #define NOTE_D7  2349
-            #define NOTE_DS7 2489
-            #define NOTE_E7  2637
-            #define NOTE_F7  2794
-            #define NOTE_FS7 2960
-            #define NOTE_G7  3136
-            #define NOTE_GS7 3322
-            #define NOTE_A7  3520
-            #define NOTE_AS7 3729
-            #define NOTE_B7  3951
-            #define NOTE_C8  4186
-            #define NOTE_CS8 4435
-            #define NOTE_D8  4699
-            #define NOTE_DS8 4978
-            #define REST      0
-
-            int tempo = 2;
-
-            int melody[] = {
-
-                // Gren Hill Zone - Sonic the Hedgehog
-                // Score available at https://musescore.com/user/248346/scores/461661
-                // Theme by Masato Nakamura, arranged by Teddy Mason
-                
-                REST,2, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-
-                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8, //7
-                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,2,
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //13
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8,
-                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8,
-                NOTE_E4,-1,
-                REST,8, NOTE_D4,8, NOTE_E4,8, NOTE_FS4,-1,
-
-                REST,8, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8, NOTE_F4,-1, //20
-                REST,8, NOTE_D4,8, NOTE_F4,8, NOTE_E4,-1, //end 1
-
-                //repeats from 1
-
-                REST,2, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-
-                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8, //7
-                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,2,
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-
-                REST,4, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //13
-                NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
-                REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_G4,4, NOTE_B4,8,
-                NOTE_A4,4, NOTE_B4,8, NOTE_A4,4, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8,
-                NOTE_E4,-1,
-                REST,8, NOTE_D4,8, NOTE_E4,8, NOTE_FS4,-1,
-
-                REST,8, NOTE_D4,8, NOTE_D4,8, NOTE_FS4,8, NOTE_F4,-1, //20
-                REST,8, NOTE_D4,8, NOTE_F4,8, NOTE_E4,8, //end 2
-                NOTE_E4,-2, NOTE_A4,8, NOTE_CS5,8, 
-                NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8, NOTE_A5,-4,
-
-            };
-        
-            int notes = sizeof(melody) / sizeof(melody[0]) / 2;
-
-            // this calculates the duration of a whole note in ms
-            int wholenote = (60000 * 4) / tempo;
-
-            int divider = 0, noteDuration = 0;
-
-            for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
-
-                // calculates the duration of each note
-                divider = melody[thisNote + 1];
-                if (divider > 0) {
-                // regular note, just proceed
-                noteDuration = (wholenote) / divider;
-                } else if (divider < 0) {
-                // dotted notes are represented with negative durations!!
-                noteDuration = (wholenote) / abs(divider);
-                noteDuration *= 1.5; // increases the duration in half for dotted notes
-                }
-
-                // we only play the note for 90% of the duration, leaving 10% as a pause
-                _tone(melody[thisNote], noteDuration * 0.9);
-
-            }
-        
-        }
-        
         void _loadSystem() {
-            // FILE* file = fopen("../data/old.bin", "rb");
-            FILE* file = fopen(OS_FILE, "rb");
+            char os[0x800] = {0}; 
 
-            if (!file) {
-                printf("Oh no, i can't open de file :(((((((\n");
-            }
+            std::ifstream file(OS_FILE, std::ios::binary);
 
-            uint8_t data = 0x00;
-            int i = 0;
-            while (fread(&data, 1, 1, file) == 1) {
-                _bus.write(i, data);
-                i++;
-            }
-            fclose(file);
+            file.read(os, 0x800);
+            file.close();
+
+            _umpk.loadOS((const uint8_t*)os);
         }
 
-        void _loadProgramFromFile(const char* filename) {
-            FILE* file = fopen(filename, "rb");
+        void _handleHooks(Cpu& cpu) {
+            uint16_t pgCounter = cpu.getProgramCounter();
 
-            if (!file) {
-                printf("Oh no, i can't open de file \" %s \" :(((((((\n", filename);
+            const uint16_t SOUND_FUNC_ADR = 0x0447;
+            const uint16_t DELAY_FUNC_ADR = 0x0506;
+
+            if (pgCounter == SOUND_FUNC_ADR) {
+                uint8_t duration  = cpu.getRegister(Cpu::Register::D);
+                uint8_t frequency = 0xFF - cpu.getRegister(Cpu::Register::B);
+
+                dj.tone(frequency*2, duration * 130);
             }
 
-            uint8_t data = 0x00;
-            int i = 0;
-            while (fread(&data, 1, 1, file) == 1) {
-                _bus.write(0x0800+i, data);
-                i++;
-            }
-
-            fclose(file);
-        }
-
-        void _tone(double freq, int duration) {
-
-            for (int i = 0; i < duration; i++) {
-                // samples.push_back(SineWave(i, freq , 0.8));
-                samples.push_back(SquareWave(i, freq , 0.8));
-            }
-
-            sndBuffer.loadFromSamples(&samples[0], samples.size(), 1, 44100);
-            sound.setBuffer(sndBuffer);
-            sound.play();
-
-            while (sound.getStatus() == sound.Playing);
-
-            samples.clear();
-            sound.resetBuffer();
-        }
-
-        void _tick() {
-
-
-            if (_cpu.getProgramCounter() == 0x0447) {
-                // _isScnaning04Port = true;
-
-                uint8_t d = _cpu.getRegister(Cpu::Register::D);
-                uint8_t b = 0xFF - _cpu.getRegister(Cpu::Register::B);
-                
-                // printf("freq = %02x; duration = %02x;\n", b, d);
-                _tone(b*2, d * 120);
-            }
-
-            // if (_cpu.getProgramCounter() == 0x0516) {
-            //     _isScnaning04Port = true;
-
-            //     uint8_t d = _cpu.getRegister(Cpu::Register::D);
-            //     _tone(d*3, 400);
-            // }
-
-            if (_cpu.getProgramCounter() == 0x0506) {
-                uint16_t delay = _cpu.getRegister(Cpu::Register::B);
-                delay = (delay << 8) | _cpu.getRegister(Cpu::Register::C);
+            if (pgCounter == DELAY_FUNC_ADR) {
+                uint16_t delay = cpu.getRegister(Cpu::Register::B);
+                delay = (delay << 8) | cpu.getRegister(Cpu::Register::C);
                 
                 for (int i = 0; i < 0xF000 * delay; i++);
             }
-
-            _cpu.tick();
-            _display.update();
-            _keyboard.update();
         }
-
-
          
-        void _cpuWork() {
-            while (true) {
-                
-                if (_isCpuRunning) {
-                    _tick();
-                    
+        void _umpkWork() {
+            _loadSystem();
 
-                    // Best delay ever
-                    for (int i = 0; i < 0x300; i++);
+            while (true) {
+                if (_isUmpkFreezed) continue;
+                _umpkMutex.lock();
+                try {
+                    _umpk.tick();
+                } catch (const std::logic_error le) {
+                    view.errorMessageBox(le.what());
+                    _umpk.restart();
+                    _umpk.tick();
                 }
-                
-                // std::this_thread::sleep_for(std::chrono::microseconds(700));
+                _handleHooks(_umpk.getCpu());
+                _umpkMutex.unlock();
             }
         }
 
         void _copyTestToMemory(uint16_t startAdr, uint8_t* test, size_t size) {
-            for (size_t i = 0; i < size; i++) {
-                _bus.write(startAdr + i, test[i]);
-            }
+            // for (size_t i = 0; i < size; i++) {
+            //     _bus.write(startAdr + i, test[i]);
+            // }
         }
 
-        void _testLabPlk1() {
-            uint8_t data[] = {
-              0x3E, 0x14, 0xD3, 0x98, 0xD3, 0x9C, 0x3E, 0x0A, 0xD3, 0x99, 0xD3, 0x9D, 0x3E, 0x81, 0xD3, 0x99, 0x3E, 0x07, 0xD3, 0x9D, 0x3E, 0xE5, 0xD3, 0x99, 0x3E, 0xFF, 0xD3, 0x9D, 0x3E, 0xC2, 0xD3, 0x98, 0xD3, 0x9C, 0xAF, 0xD3, 0xB1, 0xD3, 0xB2, 0xD3, 0xB3, 0xFB, 0x11, 0x00, 0x09, 0xE7, 0xCD, 0xC8, 0x01, 0xC3, 0x2A, 0x08, 0xFB, 0x11, 0x06, 0x09, 0xF7, 0xAF, 0xD3, 0xB1, 0xEF, 0xC9, 0xFB, 0x11, 0x0C, 0x09, 0xF7, 0xAF, 0xD3, 0xB2, 0xEF, 0xC9, 0xFB, 0x11, 0x12, 0x09, 0xF7, 0xEF, 0xC9, 0x21, 0xFA, 0x0B, 0xC5, 0xC3, 0x35, 0x02, 0x01, 0xFF, 0x02, 0xE7, 0xCD, 0xC8, 0x01, 0xCD, 0x29, 0x04, 0x0D, 0xC2, 0x5A, 0x08, 0x05, 0xC2, 0x5A, 0x08, 0xC9, 0x3E, 0x20, 0xD3, 0x98, 0xD3, 0x9C, 0xC9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3F, 0x73, 0x79, 0x4F, 0x3F, 0x00, 0x31, 0x79, 0x73, 0x79, 0x7D, 0x00, 0x00, 0x3F, 0x7D, 0x79, 0x76, 0x00, 0x00, 0x7C, 0x66, 0x3F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xCD, 0x48, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0xCD, 0x34, 0x08, 0x00, 0xCD, 0x3E, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC3, 0x4F, 0x08, 0xC3, 0x69, 0x08, 0xC3, 0x56, 0x08
-            };
-
-            _copyTestToMemory(0x0800, data, 767);
-        }
 
         void _testLab1() {
+            uint8_t data[] = {
+                0x21,
+                0x00,
+                0x09,
+                0x46,
+                0x24,
+                0x7D,
+                0xE6,
+                0x08,
+                0x4D,
+                0xCA,
+                0x10,
+                0x08,
+                0x7D,
+                0xEE,
+                0x07,
+                0x6F,
+                0x70,
+                0x69,
+                0x25,
+                0x23,
+                0x7D,
+                0xE6,
+                0xF0,
+                0xCA,
+                0x03,
+                0x08,
+                0xCF,
+            };
 
-            _testLabPlk1();
-            // uint8_t data[] = {
-            //     0x21,
-            //     0x00,
-            //     0x09,
-            //     0x46,
-            //     0x24,
-            //     0x7D,
-            //     0xE6,
-            //     0x08,
-            //     0x4D,
-            //     0xCA,
-            //     0x10,
-            //     0x08,
-            //     0x7D,
-            //     0xEE,
-            //     0x07,
-            //     0x6F,
-            //     0x70,
-            //     0x69,
-            //     0x25,
-            //     0x23,
-            //     0x7D,
-            //     0xE6,
-            //     0xF0,
-            //     0xCA,
-            //     0x03,
-            //     0x08,
-            //     0xCF,
-            // };
-
-            // _copyTestToMemory(0x0800, data, 27);
+            _copyTestToMemory(0x0800, data, 27);
         }
 
         void _testLab2() {

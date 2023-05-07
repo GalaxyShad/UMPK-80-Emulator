@@ -32,10 +32,19 @@ class Cpu {
             M, A
         };
 
-        uint8_t getRegister(Register reg) { return _getRegData((uint8_t)reg); }
+        uint8_t getRegister(Register reg)               { return _getRegData((uint8_t)reg); }
+        void    setRegister(Register reg, uint8_t data) { return _setRegData(reg, data); }
+
+        void interruptRst(int rstNum) {
+            if (rstNum < 8 && rstNum >= 0) _call(rstNum * 8, true);
+        }
+
+        void interruptCall(uint16_t adr) {
+            if (_enableInterrupts) _call(adr);
+        }
 
     private:
-        Bus&  _bus;
+        Bus&        _bus;
 
         bool        _enableInterrupts  = false;
 
@@ -116,6 +125,7 @@ class Cpu {
 
         // Machine cycles
         void        _readCommand();
+        void        _readCommand(uint8_t opcode);
 
         void        _memoryWrite(uint8_t data);
         uint8_t     _memoryRead();
@@ -215,6 +225,7 @@ class Cpu {
         void _jpo();
 
         // Call instructions
+        void _call(uint16_t adr, bool cond = true);
         void _call(bool cond = true);
         void _call();
         void _cc();

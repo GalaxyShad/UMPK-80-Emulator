@@ -21,13 +21,13 @@ class Disassembler {
         std::string translate() {
             if (_prgCounter > 0xFFFF) return "EOF"; 
 
-            uint8_t opcode = _bus.read(_prgCounter);
+            uint8_t opcode = _bus.memoryRead(_prgCounter);
 
             Instruction instruction = _instructions[opcode];
 
             for (int i = 1; i < instruction.bytes; i++) {
                 char value[8];
-                sprintf(value, "%02x", _bus.read(_prgCounter+i));
+                sprintf(value, "%02x", _bus.memoryRead(_prgCounter+i));
                 instruction.name += " " + std::string(value);
             }
 

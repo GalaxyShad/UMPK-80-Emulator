@@ -13,12 +13,28 @@
     #define UMPK80_PORT_KEYBOARD    0x18
     #define UMPK80_PORT_DISPLAY     0x38
 #else
-    #define UMPK80_PORT_SCAN        0x07
+    #define UMPK80_PORT_SPEAKER     0x04
+    #define UMPK80_PORT_IO          0x05
     #define UMPK80_PORT_KEYBOARD    0x06
     #define UMPK80_PORT_DISPLAY     0x06
+    #define UMPK80_PORT_SCAN        0x07
 #endif
 
 #define UMPK80_OS_SIZE 0x800
+
+class RegisterControlStep : public BusDeviceWritable {
+    public:
+        void busPortWrite(uint8_t data) { turnOnStepExec(); }
+
+        bool isStepExec()       { return _isStepExec; }
+
+        void turnOnStepExec()   { _isStepExec = true; }
+        void turnOffStepExec()  { _isStepExec = false; }
+
+    private:
+        bool _isStepExec = false; 
+
+};
 
 
 class Umpk80 {
@@ -36,7 +52,18 @@ class Umpk80 {
 
         uint8_t port5OutGet()               { return _register5Out.busPortRead();   }
 
-        void tick()     { _intel8080.tick();  }
+        void tick() { 
+            if (!_registerStepExec.isStepExec())
+                _intel8080.tick();  
+            else {
+                _intel8080.tick();          // 0bd7 NOP 
+                _intel8080.tick();          // 0bd8 JMP USER
+                _intel8080.tick();          // USER INST
+                _intel8080.interruptRst(1); 
+
+                _registerStepExec.turnOffStepExec();
+            }
+        }
 
         void stop()     { _intel8080.interruptRst(1); }
         void restart()  { _intel8080.interruptRst(0); }
@@ -64,6 +91,7 @@ class Umpk80 {
         }
 
         Cpu& getCpu() { return _intel8080; }
+        Bus& getBus() { return _bus; }
 
     private:
         Cpu         _intel8080;
@@ -76,14 +104,18 @@ class Umpk80 {
         RegisterDevice      _register5In;
         RegisterDevice      _register5Out;
 
+        RegisterControlStep _registerStepExec;
+
         void _bindDevices() {
             _bus.portBindOut(UMPK80_PORT_SCAN, _registerScan);
 
-            _bus.portBindIn(UMPK80_PORT_KEYBOARD, _keyboard);
+            _bus.portBindIn (UMPK80_PORT_KEYBOARD, _keyboard);
             _bus.portBindOut(UMPK80_PORT_DISPLAY, _display);
 
-            _bus.portBindIn(5,  _register5In);
-            _bus.portBindOut(5, _register5Out);
+            _bus.portBindIn (UMPK80_PORT_IO,  _register5In);
+            _bus.portBindOut(UMPK80_PORT_IO, _register5Out);
+
+            _bus.portBindOut(0xE, _registerStepExec);
         }
 
         

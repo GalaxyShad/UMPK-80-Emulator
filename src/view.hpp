@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
+#include <map>
+
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
@@ -68,8 +70,8 @@ class View : public ViewControl {
             // _windowInPorts();
             // _windowOutPorts();
             _windowControls();
-            // _windowMemory();
-            // _windowCpuInfo();
+            _windowMemory();
+            _windowCpuInfo();
             _windowKeyboard();
             _windowPort5();
             // _windowTests();
@@ -109,14 +111,6 @@ class View : public ViewControl {
             ImGui::SFML::Render(_window);
             _window.display();
 
-            
-
-
-
-            // for (int i = 0; i < 6; i++) 
-            //     _display[i].draw(_window);
-            
-
             for (int i = 0; i < 6; i++) {
                 _display[i].setValue(_dataContext.getDisplayDigit(i));
             }
@@ -129,6 +123,44 @@ class View : public ViewControl {
 
                 if (event.type == sf::Event::Closed) {
                     _window.close();
+                }
+
+                if (event.type == sf::Event::KeyPressed ||
+                    event.type == sf::Event::KeyReleased
+                ) {
+                    bool keyState = (event.type == sf::Event::KeyPressed);
+
+                    std::map<sf::Keyboard::Key, Keyboard::Key> mapKeys{
+                        { sf::Keyboard::Num0, Keyboard::Key::_0 },
+                        { sf::Keyboard::Num1, Keyboard::Key::_1 },
+                        { sf::Keyboard::Num2, Keyboard::Key::_2 },
+                        { sf::Keyboard::Num3, Keyboard::Key::_3 },
+                        { sf::Keyboard::Num4, Keyboard::Key::_4 },
+                        { sf::Keyboard::Num5, Keyboard::Key::_5 },
+                        { sf::Keyboard::Num6, Keyboard::Key::_6 },
+                        { sf::Keyboard::Num7, Keyboard::Key::_7 },
+                        { sf::Keyboard::Num8, Keyboard::Key::_8 },
+                        { sf::Keyboard::Num9, Keyboard::Key::_9 },
+                        { sf::Keyboard::A, Keyboard::Key::_A },
+                        { sf::Keyboard::B, Keyboard::Key::_B },
+                        { sf::Keyboard::C, Keyboard::Key::_C },
+                        { sf::Keyboard::D, Keyboard::Key::_D },
+                        { sf::Keyboard::E, Keyboard::Key::_E },
+                        { sf::Keyboard::F, Keyboard::Key::_F },
+
+                        { sf::Keyboard::Enter, Keyboard::Key::ZP_UV },
+                        { sf::Keyboard::Space, Keyboard::Key::OT_A },
+
+                        { sf::Keyboard::Right, Keyboard::Key::ZP_UV },
+                        { sf::Keyboard::Left, Keyboard::Key::UM },
+                        { sf::Keyboard::Up, Keyboard::Key::P },
+                        { sf::Keyboard::Down, Keyboard::Key::ST },
+
+                        { sf::Keyboard::F5, Keyboard::Key::P },
+                    };
+
+                    if (mapKeys[event.key.code])
+                        _dataContext.onUmpkKeySet(mapKeys[event.key.code], keyState);
                 }
             }
         }
@@ -148,7 +180,7 @@ class View : public ViewControl {
             if (ImGui::Button("Stop"))      _dataContext.onButtonStop();
             ImGui::SameLine();
 
-            if (ImGui::Button("Reset")) _dataContext.onBtnReset();
+            if (ImGui::Button("Reset"))     _dataContext.onBtnReset();
 
             ImGui::End();
         }
@@ -158,10 +190,10 @@ class View : public ViewControl {
             if (ImGui::BeginTable("ROM and RAM", 17, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
                 ImGui::TableSetupColumn("");
                 for (int column = 0; column < 16; column++)
-                    ImGui::TableSetupColumn(std::to_string(column).c_str());
+                    ImGui::TableSetupColumn(std::string(1, "0123456789ABCDEF"[column]).c_str());
                 ImGui::TableHeadersRow();
 
-                for (int row = 0; row < 0xFFFF / 16; row++) {
+                for (int row = 0; row < 0x1000 / 16; row++) {
                     ImGui::TableNextRow();
 
                     ImGui::TableSetColumnIndex(0);
@@ -169,7 +201,11 @@ class View : public ViewControl {
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
-                        // ImGui::Text("%02x", _dataContext.getBus().read(row*16+column));
+                        
+                        ImGui::Text(
+                            "%02x", 
+                            _dataContext.getUmpk().getBus().memoryRead(row*16+column)
+                        );
                     }
                 }
                 ImGui::EndTable();
@@ -193,7 +229,10 @@ class View : public ViewControl {
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
-                        // ImGui::Text("%02x", _dataContext.getBus().getOutPortData(row*16+column));
+                        ImGui::Text(
+                            "%02x", 
+                            _dataContext.getUmpk().getBus().portIn(row*16+column)
+                        );
                     }
                 }
                 ImGui::EndTable();
@@ -270,6 +309,8 @@ class View : public ViewControl {
         void _windowCpuInfo() {
             ImGui::Begin("CPU Info");
 
+            Cpu& cpu = _dataContext.getUmpk().getCpu();
+
             if (ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
                 ImGui::TableSetupColumn("B");
                 ImGui::TableSetupColumn("C");
@@ -282,9 +323,32 @@ class View : public ViewControl {
                 ImGui::TableHeadersRow();
 
                 ImGui::TableNextRow();
+
+                uint8_t regs[8] = {0};
+
                 for (int c = 0; c < 8; c++) {
                     ImGui::TableSetColumnIndex(c);
-                    // ImGui::Text("%02x", _dataContext.getCpu().getRegister((Cpu::Register)c));
+
+                    if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+                        regs[c] = cpu.getRegister((Cpu::Register)c);
+
+
+                    ImGui::PushItemWidth(-1);
+                    ImGui::InputScalar(
+                        "a",     
+                        ImGuiDataType_U8,  
+                        &regs[c],
+                        NULL, NULL, 
+                        "%02x"
+                    );
+                    // ImGui::PushItemWidth();
+
+
+                    // if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+                    //     ImGui::Text("%02x", cpu.getRegister((Cpu::Register)c));
+                    // else
+                    //     ImGui::Text("ERR");
+
                 }
                 ImGui::EndTable();
             }
@@ -299,20 +363,20 @@ class View : public ViewControl {
 
                 ImGui::TableNextRow();
 
-                // CpuFlagsMapping flags = _dataContext.getCpu().getFlags();
+                CpuFlagsMapping flags = cpu.getFlags();
 
-                // ImGui::TableSetColumnIndex(0);
-                // ImGui::Text("%x", flags.carry);
-                // ImGui::TableSetColumnIndex(1);
-                // ImGui::Text("%x", flags.sign);
-                // ImGui::TableSetColumnIndex(2);
-                // ImGui::Text("%x", flags.zero);
-                // ImGui::TableSetColumnIndex(3);
-                // ImGui::Text("%x", flags.auxcarry);
-                // ImGui::TableSetColumnIndex(4);
-                // ImGui::Text("%x", flags.parry);
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%x", flags.carry);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%x", flags.sign);
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%x", flags.zero);
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%x", flags.auxcarry);
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%x", flags.parry);
 
-                // ImGui::EndTable();
+                ImGui::EndTable();
             }
 
             if (ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -323,12 +387,12 @@ class View : public ViewControl {
 
                 ImGui::TableNextRow();
 
-                // ImGui::TableSetColumnIndex(0);
-                // ImGui::Text("%04x", _dataContext.getCpu().getProgramCounter());
-                // ImGui::TableSetColumnIndex(1);
-                // ImGui::Text("%04x", _dataContext.getCpu().getStackPointer());
-                // ImGui::TableSetColumnIndex(2);
-                // ImGui::Text("%02x", _dataContext.getCpu().getCommandRegister());
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%04x", cpu.getProgramCounter());
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%04x", cpu.getStackPointer());
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%02x", cpu.getCommandRegister());
                 
                 ImGui::EndTable();
             }
@@ -362,8 +426,8 @@ class View : public ViewControl {
             _dataContext.onUmpkKeySet(Keyboard::Key::_F, ImGui::Button("F", btnSize));
 
             ImGui::Button(" ", btnSize); ImGui::SameLine();
-            _dataContext.onUmpkKeySet(Keyboard::Key::SHK, ImGui::Button("PrSch", btnSize));  ImGui::SameLine();
-            _dataContext.onUmpkKeySet(Keyboard::Key::SHC, ImGui::Button("SHC", btnSize));    ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::SHK, ImGui::Button("SHK", btnSize));           ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::PR_SCH, ImGui::Button("PrSch", btnSize));    ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::_8, ImGui::Button("8", btnSize));       ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::_9, ImGui::Button("9", btnSize));       ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::_A, ImGui::Button("A", btnSize));       ImGui::SameLine();
@@ -398,13 +462,17 @@ class View : public ViewControl {
                 leds[7-i] = (inData >> i) & 0b1;
             }
 
+            // ImGui::Text("Output");
             for (int i = 0; i < 8; i++) {
-                ImGui::Checkbox(("o" + std::to_string(7-i)).c_str(), &leds[i]);
+                ImGui::RadioButton(("o" + std::to_string(7-i)).c_str(), leds[i]);
                 ImGui::SameLine();
             }
 
+
             ImGui::NewLine();
-            
+            ImGui::Separator();
+
+            // ImGui::Text("Input");
             for (int i = 0; i < 8; i++) {
                 ImGui::Checkbox(("i" + std::to_string(7-i)).c_str(), &_port5[i]);
                 ImGui::SameLine();

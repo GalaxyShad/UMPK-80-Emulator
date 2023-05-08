@@ -30,6 +30,10 @@ class Controller {
             view(vc)
         {}
 
+        ~Controller() {
+            _umpkThread.detach();
+        }
+
         void onBtnStart() {
             _umpkMutex.lock();
             _isUmpkFreezed = false;
@@ -55,7 +59,6 @@ class Controller {
         }
 
         uint8_t getDisplayDigit(int digit) {
-            // return 0;
             return _umpk.getDisplayDigit(digit);
         }
 
@@ -66,7 +69,6 @@ class Controller {
         }
 
         uint8_t port5Out() {
-            // return 0;
             return _umpk.port5OutGet();
         }
 

@@ -50,20 +50,7 @@ class Keyboard : public BusDeviceReadable {
                 s = (s >> 1), i++
             );
 
-            // printf("LOL %02x %02x\n", s, scanValue);
-
             return _scanRow(i);
-
-            // switch (scanValue) {
-            //     case 0b01111111: value = _keys[_D] ? 0xFE : _keys[_E] ? 0xFD : _keys[_F] ? 0xFB : 0xFF; break;
-            //     case 0b10111111: value = _keys[_A] ? 0xFE : _keys[_B] ? 0xFD : _keys[_C] ? 0xFB : 0xFF; break;
-            //     case 0b11011111: value = _keys[_7] ? 0xFE : _keys[_8] ? 0xFD : _keys[_9] ? 0xFB : 0xFF; break;
-            //     case 0b11101111: value = _keys[_4] ? 0xFE : _keys[_5] ? 0xFD : _keys[_6] ? 0xFB : 0xFF; break;
-            //     case 0b11110111: value = _keys[_1] ? 0xFE : _keys[_2] ? 0xFD : _keys[_3] ? 0xFB : 0xFF; break;
-            //     case 0b11111011: value = _keys[_0] ? 0xFE : _keys[ZP_UV] ? 0xFD : _keys[UM] ? 0xFB : 0xFF; break;
-            //     case 0b11111101: value = _keys[P]  ? 0xFE : _keys[OT_RG] ? 0xFD : _keys[OT_A] ? 0xFB : 0xFF; break;
-            //     case 0b11111110: value = _keys[SHK] ? 0xFE : _keys[PR_SCH] ? 0xFD : 0xFF; break;
-            // }
         }
 
 

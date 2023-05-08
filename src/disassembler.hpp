@@ -19,16 +19,17 @@ class Disassembler {
         Disassembler(Bus& bus) : _bus(bus) {};
 
         std::string translate() {
-            if (_prgCounter > 0xFFFF) return "EOF"; 
+            if (_prgCounter >= 0x1000) return "EOF"; 
 
             uint8_t opcode = _bus.memoryRead(_prgCounter);
 
             Instruction instruction = _instructions[opcode];
 
+            instruction.name += " ";
             for (int i = 1; i < instruction.bytes; i++) {
                 char value[8];
-                sprintf(value, "%02x", _bus.memoryRead(_prgCounter+i));
-                instruction.name += " " + std::string(value);
+                sprintf(value, "%02x", _bus.memoryRead(_prgCounter + instruction.bytes-i));
+                instruction.name += std::string(value);
             }
 
             _prgCounter += instruction.bytes;
@@ -40,7 +41,12 @@ class Disassembler {
         void reset(uint16_t prgCounter) { _prgCounter = prgCounter; } 
 
         uint8_t getInstructionBytes(uint8_t opcode) { return _instructions[opcode].bytes; }
-        bool isEof() { return _prgCounter > 0xFFFF; }
+
+        std::string getInstruction(uint8_t cmd) {
+            return _instructions[cmd].name;
+        }
+
+        bool isEof() { return _prgCounter >= 0x1000; }
         
     private:
         Bus& _bus;

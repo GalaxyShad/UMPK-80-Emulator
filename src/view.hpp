@@ -66,7 +66,7 @@ class View : public ViewControl {
         void _update() {
             ImGui::SFML::Update(_window, _deltaClock.restart());
 
-            // _windowCode();
+            _windowCode();
             // _windowInPorts();
             // _windowOutPorts();
             _windowControls();
@@ -75,6 +75,8 @@ class View : public ViewControl {
             _windowKeyboard();
             _windowPort5();
             // _windowTests();
+
+            _windowCommandTable();
 
             ImGui::ShowDemoWindow();
 
@@ -89,7 +91,11 @@ class View : public ViewControl {
                 ImGui::Text("%s", _errMsg);
                 ImGui::Separator();
 
-                if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); _errMsg = nullptr; }
+                if (ImGui::Button("OK", ImVec2(120, 0))) { 
+                    ImGui::CloseCurrentPopup(); 
+                    _errMsg = nullptr; 
+                }
+
                 ImGui::SetItemDefaultFocus();
                 ImGui::EndPopup();
             }
@@ -144,6 +150,7 @@ class View : public ViewControl {
                         { sf::Keyboard::A, Keyboard::Key::_A },
                         { sf::Keyboard::B, Keyboard::Key::_B },
                         { sf::Keyboard::C, Keyboard::Key::_C },
+
                         { sf::Keyboard::D, Keyboard::Key::_D },
                         { sf::Keyboard::E, Keyboard::Key::_E },
                         { sf::Keyboard::F, Keyboard::Key::_F },
@@ -159,8 +166,9 @@ class View : public ViewControl {
                         { sf::Keyboard::F5, Keyboard::Key::P },
                     };
 
-                    if (mapKeys[event.key.code])
+                    if (mapKeys.count(event.key.code)) {
                         _dataContext.onUmpkKeySet(mapKeys[event.key.code], keyState);
+                    }
                 }
             }
         }
@@ -187,23 +195,37 @@ class View : public ViewControl {
 
         void _windowMemory() {
             ImGui::Begin("Memory");
-            if (ImGui::BeginTable("ROM and RAM", 17, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            if (ImGui::BeginTable(
+                "ROM and RAM", 
+                17, 
+                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)
+            ) {
+                ImGui::TableSetupScrollFreeze(1, 1);
                 ImGui::TableSetupColumn("");
                 for (int column = 0; column < 16; column++)
-                    ImGui::TableSetupColumn(std::string(1, "0123456789ABCDEF"[column]).c_str());
+                    ImGui::TableSetupColumn(("0" + std::string(1, "0123456789ABCDEF"[column])).c_str());
                 ImGui::TableHeadersRow();
 
                 for (int row = 0; row < 0x1000 / 16; row++) {
                     ImGui::TableNextRow();
 
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%04x", row << 4);
+                    ImGui::TableSetBgColor(
+                        ImGuiTableBgTarget_CellBg,
+                        ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]), 0
+                    );
+
+                    
+                    ImGui::Text("%04X", row << 4);
 
                     for (int column = 0; column < 16; column++) {
                         ImGui::TableSetColumnIndex(column+1);
                         
+                        
+                        // ImGui::Selectable()
+
                         ImGui::Text(
-                            "%02x", 
+                            "%02X", 
                             _dataContext.getUmpk().getBus().memoryRead(row*16+column)
                         );
                     }
@@ -265,44 +287,225 @@ class View : public ViewControl {
         }
 
         void _windowCode() {
-            // ImGui::Begin("Code");
-            // if (ImGui::BeginTable("Code", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            //     ImGui::TableSetupColumn("ADR");
-            //     ImGui::TableSetupColumn("BYTE");
-            //     ImGui::TableSetupColumn("ASM");
+            ImGui::Begin("Code");
+
+            ImGui::BeginChild(
+                ImGui::GetID((void*)(intptr_t)0), 
+                ImVec2(-1, -1), 
+                true
+            );
+
+            Cpu& cpu = _dataContext.getUmpk().getCpu();
+            Disassembler& dasm = _dataContext.getDisasm();
+            dasm.reset();
+
+            int cmdSleep = 1;
+            for (int row = 0; row < 0x1000; row++) {
+                static uint16_t prevPg = 0x0000;
+
+                uint8_t cmd = _dataContext.getUmpk().getBus().memoryRead(row);
+
+                std::string cmdName;
+                if (cmdSleep == 1) {
+                    cmdSleep = dasm.getInstructionBytes(cmd);
+                    cmdName = std::string(dasm.translate());
+                } else {
+                    cmdName = " ";
+                    cmdSleep--;
+                }
+
+                if (row == cpu.getProgramCounter()) {
+                    ImGui::TextColored(
+                        ImVec4(1, 1, 0, 1), 
+                        "%04X | %02X | %s", 
+                        row, cmd, cmdName.c_str() 
+                    );
+
+                    if (prevPg != cpu.getProgramCounter()) {
+                        ImGui::SetScrollHereY(0.25f); 
+                        prevPg = cpu.getProgramCounter();
+                    }
+                } else {
+                    ImGui::Text(
+                        "%04X | %02X | %s", 
+                        row, cmd, cmdName.c_str() 
+                    );
+                }
+            }
+
+
+            
+            ImGui::EndChild();
+
+            // ImGui::PushItemWidth(-100);
+
+            ImGui::End();
+        }
+
+        void _windowCpuInfoUnsafe() {
+            ImGui::Begin("CPU Info (Unsafe)");
+
+            Cpu& cpu = _dataContext.getUmpk().getCpu();
+
+            // ImGui::BeginChild(
+            //     ImGui::GetID((void*)(intptr_t)0), 
+            //     ImVec2(320, 100), 
+            //     true
+            // );
+
+            ImGui::Text("Registers");
+
+            uint8_t regs[8] = {0};
+            const char* labels[] = {
+                "B", "C",
+                "D", "E",
+                "H", "L"
+            };
+            for (int c = 0; c < 6; c++) {
+                    
+                regs[c] = cpu.getRegister((Cpu::Register)c);
+
+                ImGui::PushItemWidth(50);
+                ImGui::InputScalar(
+                    labels[c],     
+                    ImGuiDataType_U8,  
+                    &regs[c],
+                    NULL, NULL, 
+                    "%02X"
+                );
+
+                if (c % 2 == 0) ImGui::SameLine();
+            }
+
+            ImGui::Text("Flags");
+            CpuFlagsMapping flags = cpu.getFlags();
+
+            bool boolFlags[5] = {
+                flags.carry,
+                flags.sign,
+                flags.zero,
+                flags.auxcarry,
+                flags.parry
+            };
+
+            const char* labelFlags[5] = {
+                "Carry",
+                "Sign",
+                "Zero",
+                "AC",
+                "Parrity"
+            };
+
+
+            for (int i = 0; i < 5; i++) {
+                ImGui::Checkbox(labelFlags[i], &boolFlags[i]);
+                ImGui::SameLine();
+            }
+
+            // ImGui::EndChild();
+
+            ImGui::End();
+
+
+
+            // if (ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            //     ImGui::TableSetupColumn("B");
+            //     ImGui::TableSetupColumn("C");
+            //     ImGui::TableSetupColumn("D");
+            //     ImGui::TableSetupColumn("E");
+            //     ImGui::TableSetupColumn("H");
+            //     ImGui::TableSetupColumn("L");
+            //     ImGui::TableSetupColumn("M");
+            //     ImGui::TableSetupColumn("A");
             //     ImGui::TableHeadersRow();
 
-            //     // _dataContext.getDisassembler().reset();
-            //     int cmdSleep = 1;
-            //     for (int row = 0; row < 0x0d00; row++) {
-            //         ImGui::TableNextRow();
+            //     ImGui::TableNextRow();
 
-            //         ImGui::TableSetColumnIndex(0);
-            //         ImGui::Text("%04x", row);
+            //     uint8_t regs[8] = {0};
 
-            //         if (_dataContext.getCpu().getProgramCounter() == row)
-            //             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
+            //     for (int c = 0; c < 8; c++) {
+            //         ImGui::TableSetColumnIndex(c);
 
-            //         ImGui::TableSetColumnIndex(1);
+            //         if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+            //             regs[c] = cpu.getRegister((Cpu::Register)c);
 
-            //         if (_dataContext.getCpu().getProgramCounter() == row)
-            //             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF0A5F38);
 
-            //         uint8_t cmd = _dataContext.getBus().read(row);
-            //         ImGui::Text("%02x", cmd);
+            //         ImGui::PushItemWidth(-1);
+            //         ImGui::InputScalar(
+            //             "a",     
+            //             ImGuiDataType_U8,  
+            //             &regs[c],
+            //             NULL, NULL, 
+            //             "%02x"
+            //         );
+            //         // ImGui::PushItemWidth();
 
-            //         ImGui::TableSetColumnIndex(2);
 
-            //         if (cmdSleep == 1) {
-            //             cmdSleep = _dataContext.getDisassembler().getInstructionBytes(cmd);
-            //             ImGui::Text(_dataContext.getDisassembler().translate().c_str());
-            //         } else {
-            //             ImGui::Text("");
-            //             cmdSleep--;
-            //         }
+            //         // if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+            //         //     ImGui::Text("%02x", cpu.getRegister((Cpu::Register)c));
+            //         // else
+            //         //     ImGui::Text("ERR");
+
             //     }
             //     ImGui::EndTable();
             // }
+
+            // if (ImGui::BeginTable("Flags", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            //     ImGui::TableSetupColumn("Carry");
+            //     ImGui::TableSetupColumn("Sign");
+            //     ImGui::TableSetupColumn("Zero");
+            //     ImGui::TableSetupColumn("AC");
+            //     ImGui::TableSetupColumn("Parrity");
+            //     ImGui::TableHeadersRow();
+
+            //     ImGui::TableNextRow();
+
+            //     CpuFlagsMapping flags = cpu.getFlags();
+
+            //     ImGui::TableSetColumnIndex(0);
+            //     ImGui::Text("%x", flags.carry);
+            //     ImGui::TableSetColumnIndex(1);
+            //     ImGui::Text("%x", flags.sign);
+            //     ImGui::TableSetColumnIndex(2);
+            //     ImGui::Text("%x", flags.zero);
+            //     ImGui::TableSetColumnIndex(3);
+            //     ImGui::Text("%x", flags.auxcarry);
+            //     ImGui::TableSetColumnIndex(4);
+            //     ImGui::Text("%x", flags.parry);
+
+            //     ImGui::EndTable();
+            // }
+
+            // if (ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            //     ImGui::TableSetupColumn("Program Counter");
+            //     ImGui::TableSetupColumn("Stack Pointer");
+            //     ImGui::TableSetupColumn("Reg CMD");
+            //     ImGui::TableHeadersRow();
+
+            //     ImGui::TableNextRow();
+
+            //     ImGui::TableSetColumnIndex(0);
+            //     ImGui::Text("%04x", cpu.getProgramCounter());
+            //     ImGui::TableSetColumnIndex(1);
+            //     ImGui::Text("%04x", cpu.getStackPointer());
+            //     ImGui::TableSetColumnIndex(2);
+            //     ImGui::Text("%02x", cpu.getCommandRegister());
+                
+            //     ImGui::EndTable();
+            // }
+
+            // ImGui::InputScalar(
+            //     "Manual Program Counter",     
+            //     ImGuiDataType_U16,    
+            //     &_inputValuePgCounter,
+            //     NULL, NULL, 
+            //     "%04x"
+            // );
+
+            // if (ImGui::Button("Set")) {
+            //     // _dataContext.onSetProgramCounter(_inputValuePgCounter);
+            // }
+
             // ImGui::End();
         }
 
@@ -329,25 +532,25 @@ class View : public ViewControl {
                 for (int c = 0; c < 8; c++) {
                     ImGui::TableSetColumnIndex(c);
 
-                    if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
-                        regs[c] = cpu.getRegister((Cpu::Register)c);
-
-
-                    ImGui::PushItemWidth(-1);
-                    ImGui::InputScalar(
-                        "a",     
-                        ImGuiDataType_U8,  
-                        &regs[c],
-                        NULL, NULL, 
-                        "%02x"
-                    );
-                    // ImGui::PushItemWidth();
-
-
                     // if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
-                    //     ImGui::Text("%02x", cpu.getRegister((Cpu::Register)c));
-                    // else
-                    //     ImGui::Text("ERR");
+                    //     regs[c] = cpu.getRegister((Cpu::Register)c);
+
+
+                    // ImGui::PushItemWidth(-1);
+                    // ImGui::InputScalar(
+                    //     "a",     
+                    //     ImGuiDataType_U8,  
+                    //     &regs[c],
+                    //     NULL, NULL, 
+                    //     "%02x"
+                    // );
+                    // // ImGui::PushItemWidth();
+
+
+                    if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+                        ImGui::Text("%02X", cpu.getRegister((Cpu::Register)c));
+                    else
+                        ImGui::Text("ERR");
 
                 }
                 ImGui::EndTable();
@@ -397,17 +600,19 @@ class View : public ViewControl {
                 ImGui::EndTable();
             }
 
-            ImGui::InputScalar(
-                "Manual Program Counter",     
-                ImGuiDataType_U16,    
-                &_inputValuePgCounter,
-                NULL, NULL, 
-                "%04x"
-            );
+            // if (ImGui::InputScalar(
+            //     "Manual Program Counter",     
+            //     ImGuiDataType_U16,    
+            //     &_inputValuePgCounter,
+            //     NULL, NULL, 
+            //     "%04x"
+            // )) {
+            //     _dataContext.onSetProgramCounter(_inputValuePgCounter);
+            // }
 
-            if (ImGui::Button("Set")) {
-                // _dataContext.onSetProgramCounter(_inputValuePgCounter);
-            }
+            // if (ImGui::Button("Set")) {
+            //     // _dataContext.onSetProgramCounter(_inputValuePgCounter);
+            // }
 
             ImGui::End();
         }
@@ -426,7 +631,7 @@ class View : public ViewControl {
             _dataContext.onUmpkKeySet(Keyboard::Key::_F, ImGui::Button("F", btnSize));
 
             ImGui::Button(" ", btnSize); ImGui::SameLine();
-            _dataContext.onUmpkKeySet(Keyboard::Key::SHK, ImGui::Button("SHK", btnSize));           ImGui::SameLine();
+            _dataContext.onUmpkKeySet(Keyboard::Key::SHK, ImGui::Button("SHK", btnSize));         ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::PR_SCH, ImGui::Button("PrSch", btnSize));    ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::_8, ImGui::Button("8", btnSize));       ImGui::SameLine();
             _dataContext.onUmpkKeySet(Keyboard::Key::_9, ImGui::Button("9", btnSize));       ImGui::SameLine();
@@ -502,7 +707,56 @@ class View : public ViewControl {
             ImGui::End();
         }
 
+        void _windowCommandTable() {
+            ImGui::Begin("Command table");
 
+            if (ImGui::BeginTable(
+                "ROM and RAM", 
+                17, 
+                ImGuiTableFlags_Borders | 
+                ImGuiTableFlags_RowBg | 
+                ImGuiTableFlags_ScrollX | 
+                ImGuiTableFlags_ScrollY |
+                ImGuiTableFlags_SizingFixedSame)
+            ) {
+                ImGui::TableSetupScrollFreeze(1, 1);
+                ImGui::TableSetupColumn("");
+
+                for (int column = 0; column < 16; column++) {
+                    ImGui::TableSetupColumn(("0" + std::string(1, "0123456789ABCDEF"[column])).c_str());
+                }
+
+                ImGui::TableHeadersRow();
+
+                for (int row = 0; row < 16; row++) {
+                    ImGui::TableNextRow();
+
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TableSetBgColor(
+                        ImGuiTableBgTarget_CellBg,
+                        ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]), 0
+                    );
+
+                    
+                    ImGui::Text("%02X", row << 4);
+
+                    for (int column = 0; column < 16; column++) {
+                        ImGui::TableSetColumnIndex(column+1);
+                                                
+                        std::string instr = _dataContext.getDisasm().getInstruction(row * 16 + column);
+                        
+                        std::transform(instr.begin(), instr.end(), instr.begin(), ::toupper); 
+                        ImGui::Selectable(
+                            instr.c_str()
+                        );
+
+                    }
+                }
+                ImGui::EndTable();
+            }
+
+            ImGui::End();
+        }
 
         void _applyTheme() {
             ImGuiStyle& style = ImGui::GetStyle();

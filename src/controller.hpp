@@ -27,6 +27,7 @@ class Controller {
     public:
         Controller(ViewControl& vc) : 
             _umpkThread(_umpkWork, this),
+            _disasm(_umpk.getBus()),
             view(vc)
         {}
 
@@ -58,6 +59,8 @@ class Controller {
             _umpkMutex.unlock();
         }
 
+        bool isUmpkRunning() { return !_isUmpkFreezed; }
+
         uint8_t getDisplayDigit(int digit) {
             return _umpk.getDisplayDigit(digit);
         }
@@ -73,16 +76,19 @@ class Controller {
         }
 
         void port5In(uint8_t data) {
-            // _umpkMutex.lock();
-            // _umpk.port5InSet(data);
-            // _umpkMutex.unlock();
+            _umpkMutex.lock();
+            _umpk.port5InSet(data);
+            _umpkMutex.unlock();
         }
 
-        Umpk80& getUmpk() { return _umpk; }
+        Umpk80& getUmpk()   { return _umpk; }
+        Disassembler& getDisasm() { return _disasm; }
 
-        // void onSetProgramCounter(uint16_t value) {
-        //     _cpu.setProgramCounter(value);
-        // }
+        void onSetProgramCounter(uint16_t value) {
+            _umpkMutex.lock();
+            _umpk.getCpu().setProgramCounter(value);
+            _umpkMutex.unlock();
+        }
 
         // void loadTest(uint8_t testNum) {
         //     _isCpuRunning = false;
@@ -111,6 +117,7 @@ class Controller {
 
     private:
         Umpk80 _umpk;
+        Disassembler _disasm;
         Dj dj;
 
         std::thread _umpkThread;
@@ -163,8 +170,8 @@ class Controller {
                     _umpk.tick();
                 } catch (const std::logic_error le) {
                     view.errorMessageBox(le.what());
-                    _umpk.restart();
-                    _umpk.tick();
+                    _umpk.getCpu().interruptRst(7);
+                    // _umpk.tick();
                 }
                 _handleHooks(_umpk.getCpu());
                 _umpkMutex.unlock();

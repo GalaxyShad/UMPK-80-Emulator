@@ -5,6 +5,7 @@
 #include <iostream>
 #include <mutex>
 #include <fstream>
+#include <vector>
 
 #include <SFML/Audio.hpp>
 #include <cmath>
@@ -90,29 +91,26 @@ class Controller {
             _umpkMutex.unlock();
         }
 
-        // void loadTest(uint8_t testNum) {
-        //     _isCpuRunning = false;
 
-        //     // switch(testNum) {
-        //     //     case 1: _testLab1(); break;
-        //     //     case 2: _testLab2(); break;
-        //     //     case 3: _testLab3(); break;
-        //     //     case 4: _testLab4(); break;
-        //     //     case 5: _testLab5(); break;
-        //     //     case 6: _testLab6(); break;
-        //     // }
 
-        //     switch(testNum) {
-        //         case 1: _loadProgramFromFile("1.i8080asm.bin"); break;
-        //         case 2: _loadProgramFromFile("2.i8080asm.bin"); break;
-        //         case 3: _loadProgramFromFile("3.i8080asm.bin"); break;
-        //         case 4: _loadProgramFromFile("4.i8080asm.bin"); break;
-        //         case 5: _loadProgramFromFile("5.i8080asm.bin"); break;
-        //         case 6: _loadProgramFromFile("6.i8080asm.bin"); break;
-        //     }
+        std::vector<uint8_t> readBinaryFile(std::string path) {
+            std::ifstream file(path, std::ios::binary);
+            std::istream_iterator<uint8_t> start(file), end;
 
-        //     _isCpuRunning = true;
-        // }
+            std::vector<uint8_t> data(start, end);
+            file.close();
+
+            return data;
+        }
+
+        void loadProgramToMemory(uint16_t position, std::vector<uint8_t>& program) {
+            _umpkMutex.lock();
+            for (size_t i = 0; i < program.size(); i++) {
+                _umpk.getBus().memoryWrite(position + i, program[i]);
+            }
+            _umpk.getCpu().interruptRst(7);
+            _umpkMutex.unlock();
+        }
 
 
     private:
@@ -166,22 +164,23 @@ class Controller {
             while (true) {
                 if (_isUmpkFreezed) continue;
                 _umpkMutex.lock();
+
                 try {
                     _umpk.tick();
                 } catch (const std::logic_error le) {
-                    view.errorMessageBox(le.what());
+                    view.errorMessageBox(std::string(le.what()));
                     _umpk.getCpu().interruptRst(7);
-                    // _umpk.tick();
                 }
+
                 _handleHooks(_umpk.getCpu());
                 _umpkMutex.unlock();
             }
         }
 
         void _copyTestToMemory(uint16_t startAdr, uint8_t* test, size_t size) {
-            // for (size_t i = 0; i < size; i++) {
-            //     _bus.write(startAdr + i, test[i]);
-            // }
+            for (size_t i = 0; i < size; i++) {
+                _umpk.getBus().memoryWrite(startAdr + i, test[i]);
+            }
         }
 
 

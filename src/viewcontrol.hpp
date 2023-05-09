@@ -2,5 +2,5 @@
 
 class ViewControl {
     public:
-        virtual void errorMessageBox(const char* errMsg) = 0;
+        virtual void errorMessageBox(std::string errMsg) = 0;
 };

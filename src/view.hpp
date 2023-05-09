@@ -30,7 +30,7 @@ class View : public ViewControl {
             }
         }
 
-        void errorMessageBox(const char* errMsg) {
+        void errorMessageBox(std::string errMsg) {
             
             // ImGui::OpenPopup("Error");
             _errMsg = errMsg;
@@ -40,10 +40,9 @@ class View : public ViewControl {
             ImGui::SFML::Shutdown();
         }
     private:
-
         Controller          _dataContext;
 
-        const char* _errMsg = nullptr;
+        std::string _errMsg;
 
         bool _port5[8] = { false };
 
@@ -74,13 +73,13 @@ class View : public ViewControl {
             _windowCpuInfo();
             _windowKeyboard();
             _windowPort5();
-            // _windowTests();
+            _windowTests();
 
             _windowCommandTable();
 
             ImGui::ShowDemoWindow();
 
-            if (_errMsg)
+            if (!_errMsg.empty())
                 ImGui::OpenPopup("Error");  //_dataContext.onBtnReset();
 
             ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -88,12 +87,12 @@ class View : public ViewControl {
 
             if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
             {
-                ImGui::Text("%s", _errMsg);
+                ImGui::Text("%s", _errMsg.c_str());
                 ImGui::Separator();
 
                 if (ImGui::Button("OK", ImVec2(120, 0))) { 
                     ImGui::CloseCurrentPopup(); 
-                    _errMsg = nullptr; 
+                    _errMsg = ""; 
                 }
 
                 ImGui::SetItemDefaultFocus();
@@ -228,57 +227,6 @@ class View : public ViewControl {
                             "%02X", 
                             _dataContext.getUmpk().getBus().memoryRead(row*16+column)
                         );
-                    }
-                }
-                ImGui::EndTable();
-            }
-            ImGui::End();
-        }
-
-        void _windowOutPorts() {
-            ImGui::Begin("Out Ports");
-            if (ImGui::BeginTable("Out Ports", 17, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("");
-                for (int column = 0; column < 16; column++)
-                    ImGui::TableSetupColumn(std::to_string(column).c_str());
-                ImGui::TableHeadersRow();
-
-                for (int row = 0; row < 256 / 16; row++) {
-                    ImGui::TableNextRow();
-
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%02x", row << 4);
-
-                    for (int column = 0; column < 16; column++) {
-                        ImGui::TableSetColumnIndex(column+1);
-                        ImGui::Text(
-                            "%02x", 
-                            _dataContext.getUmpk().getBus().portIn(row*16+column)
-                        );
-                    }
-                }
-                ImGui::EndTable();
-            }
-            ImGui::End();
-        }
-
-        void _windowInPorts() {
-            ImGui::Begin("In Ports");
-            if (ImGui::BeginTable("In Ports", 17, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("");
-                for (int column = 0; column < 16; column++)
-                    ImGui::TableSetupColumn(std::to_string(column).c_str());
-                ImGui::TableHeadersRow();
-
-                for (int row = 0; row < 256 / 16; row++) {
-                    ImGui::TableNextRow();
-
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%02x", row << 4);
-
-                    for (int column = 0; column < 16; column++) {
-                        ImGui::TableSetColumnIndex(column+1);
-                        // ImGui::Text("%02x", _dataContext.getBus().portRead(row*16+column));
                     }
                 }
                 ImGui::EndTable();
@@ -600,20 +548,6 @@ class View : public ViewControl {
                 ImGui::EndTable();
             }
 
-            // if (ImGui::InputScalar(
-            //     "Manual Program Counter",     
-            //     ImGuiDataType_U16,    
-            //     &_inputValuePgCounter,
-            //     NULL, NULL, 
-            //     "%04x"
-            // )) {
-            //     _dataContext.onSetProgramCounter(_inputValuePgCounter);
-            // }
-
-            // if (ImGui::Button("Set")) {
-            //     // _dataContext.onSetProgramCounter(_inputValuePgCounter);
-            // }
-
             ImGui::End();
         }
 
@@ -698,10 +632,125 @@ class View : public ViewControl {
         void _windowTests() {
             ImGui::Begin("Tests");
 
-            for (int i = 0; i < 6; i++) {
-                if (ImGui::Button((std::to_string(i+1) + ".i8080asm.bin").c_str())) {
-                    // _dataContext.loadTest(i+1);
+            static char pathFile[255] = {0};
+            ImGui::PushItemWidth(200);
+            ImGui::InputText("File path", pathFile, 255);
+            ImGui::SameLine();
+            
+            static std::vector<uint8_t> program;
+            static std::string err;
+
+            if (ImGui::Button("Open", ImVec2(100, 0))) {
+                program = _dataContext.readBinaryFile(std::string(pathFile));
+
+                if (program.size() == 0)
+                    err = "Cannot open a file " + std::string(pathFile);
+            }
+
+            if (!err.empty() && program.size() == 0)
+                ImGui::TextColored(ImVec4(255, 0, 0, 127), err.c_str());
+
+            if (program.size() != 0)
+                ImGui::TextColored(
+                    ImVec4(0, 255, 0, 127), 
+                    ("File " + std::string(pathFile) + " is loaded succesfully").c_str()
+                );
+
+            if (program.size() != 0) {
+                if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
+                    if (ImGui::BeginTabItem("RAW")) {
+                        if (ImGui::BeginTable(
+                            "Loaded program", 17,
+                            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY,
+                            ImVec2(0, 320))
+                        ) {
+                            ImGui::TableSetupScrollFreeze(1, 1);
+                            ImGui::TableSetupColumn("");
+                            for (int column = 0; column < 16; column++)
+                                ImGui::TableSetupColumn(("0" + std::string(1, "0123456789ABCDEF"[column])).c_str());
+                            ImGui::TableHeadersRow();
+
+                            for (int row = 0; row < (program.size() / 16) + 1; row++) {
+                                ImGui::TableNextRow();
+
+                                ImGui::TableSetColumnIndex(0);
+                                ImGui::TableSetBgColor(
+                                    ImGuiTableBgTarget_CellBg,
+                                    ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]), 0
+                                );
+
+                                
+                                ImGui::Text("%04X", row << 4);
+
+                                for (int column = 0; column < 16; column++) {
+                                    ImGui::TableSetColumnIndex(column+1);
+
+                                    uint8_t val = (row*16+column < program.size()) ? program[row*16+column] : 0x00;
+                                    ImGui::Text("%02X",  val);
+                                }
+                            }
+                            ImGui::EndTable();
+                        }
+                        ImGui::EndTabItem();
+                    }
+
+                    if (ImGui::BeginTabItem("Decompiled")) {
+                        ImGui::BeginChild(
+                            ImGui::GetID((void*)(intptr_t)0), 
+                            ImVec2(-1, 320), 
+                            true
+                        );
+
+                        Disassembler& dasm = _dataContext.getDisasm();
+
+                        int cmdSleep = 1;
+                        for (int row = 0; row < program.size(); row++) {
+                            static uint16_t prevPg = 0x0000;
+
+                            uint8_t cmd = program[row];
+
+                            std::string cmdName;
+                            if (cmdSleep == 1) {
+                                cmdSleep = dasm.getInstructionBytes(cmd);
+                                cmdName  = dasm.getInstruction(cmd);
+                            } else {
+                                cmdName = " ";
+                                cmdSleep--;
+                            }
+
+                            ImGui::Text(
+                                "%04X | %02X | %s", 
+                                row, cmd, cmdName.c_str() 
+                            );
+                        }
+
+                        ImGui::EndChild();
+                        ImGui::EndTabItem();
+                    }
                 }
+                ImGui::EndTabBar();
+
+                static uint16_t copyTo = 0x800;
+
+                uint16_t min = 0x0800;
+                uint16_t max = 0x0FFF; 
+
+                ImGui::Separator();
+                ImGui::DragScalar(
+                    "Memory position",
+                    ImGuiDataType_U16,
+                    &copyTo,
+                    1,
+                    &min,
+                    &max,
+                    "%04x"
+                );
+
+                ImGui::Separator();
+                if (ImGui::Button("Load", ImVec2(100, 0))) {
+                    _dataContext.loadProgramToMemory(copyTo, program);
+                };
+                
             }
 
             ImGui::End();
@@ -721,6 +770,25 @@ class View : public ViewControl {
             ) {
                 ImGui::TableSetupScrollFreeze(1, 1);
                 ImGui::TableSetupColumn("");
+
+                const Keyboard::Key keys[16] = {
+                    Keyboard::Key::_0,
+                    Keyboard::Key::_1,
+                    Keyboard::Key::_2,
+                    Keyboard::Key::_3,
+                    Keyboard::Key::_4,
+                    Keyboard::Key::_5,
+                    Keyboard::Key::_6,
+                    Keyboard::Key::_7,
+                    Keyboard::Key::_8,
+                    Keyboard::Key::_9,
+                    Keyboard::Key::_A,
+                    Keyboard::Key::_B,
+                    Keyboard::Key::_C,
+                    Keyboard::Key::_D,
+                    Keyboard::Key::_E,
+                    Keyboard::Key::_F
+                };
 
                 for (int column = 0; column < 16; column++) {
                     ImGui::TableSetupColumn(("0" + std::string(1, "0123456789ABCDEF"[column])).c_str());
@@ -746,9 +814,14 @@ class View : public ViewControl {
                         std::string instr = _dataContext.getDisasm().getInstruction(row * 16 + column);
                         
                         std::transform(instr.begin(), instr.end(), instr.begin(), ::toupper); 
-                        ImGui::Selectable(
-                            instr.c_str()
-                        );
+                        ImGui::Selectable(instr.c_str());
+                        // if (ImGui::Selectable(
+                        //     instr.c_str()
+                        // )) {
+                        //     uint8_t cmdByte = row * 16 + column;
+                        //     _dataContext.onUmpkKeySet(keys[cmdByte >> 4], true);
+                        //     _dataContext.onUmpkKeySet(keys[cmdByte & 0xF], true);
+                        // }
 
                     }
                 }
@@ -757,6 +830,8 @@ class View : public ViewControl {
 
             ImGui::End();
         }
+
+
 
         void _applyTheme() {
             ImGuiStyle& style = ImGui::GetStyle();

@@ -3,9 +3,6 @@
 #include "bus.hpp"
 #include "register.hpp"
 
-#include <iostream>
-
-
 class Display : public BusDeviceWritable {
     public:
         void busPortWrite(uint8_t data) {

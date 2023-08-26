@@ -1,10 +1,13 @@
 #pragma once
 
-#include <cinttypes>
-#include <cstring>
+#include "int-defines.hpp"
 
-#include <exception>
-#include <iostream>
+// #include <cstring>
+
+// #include <exception>
+// #include <iostream>
+
+#include <cstring>
 
 typedef uint8_t (*portInFunc_t)();
 typedef void (*portOutFunc_t)(uint8_t);
@@ -34,7 +37,7 @@ class Bus {
         uint8_t memoryRead(uint16_t adr) {
             if (adr >= MEMORY_SIZE) {
                 // printf("%04x\n", adr);
-                throw std::logic_error(std::string("Cannot read memory from " + std::to_string(adr)).c_str());
+                // throw std::logic_error(std::string("Cannot read memory from " + std::to_string(adr)).c_str());
             }
                 
 

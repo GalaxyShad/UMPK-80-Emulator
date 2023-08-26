@@ -6,7 +6,7 @@
 #include "register.hpp"
 #include "display.hpp"
 
-#include <cinttypes>
+#include "int-defines.hpp"
 
 #ifdef EMULATE_OLD_UMPK
     #define UMPK80_PORT_SCAN        0x28

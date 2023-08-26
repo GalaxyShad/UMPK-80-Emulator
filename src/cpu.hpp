@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cinttypes>
+#include "int-defines.hpp"
 
 #include "bus.hpp"
 
@@ -62,10 +62,10 @@ class Cpu {
         uint8_t     _regH = 0x00, _regL = 0x00;
 
         uint8_t*    _registers[8] = {
-            &_regB, &_regC, 
-            &_regD, &_regE, 
-            &_regH, &_regL, 
-            NULL,   &_regA, 
+            &_regB,  &_regC, 
+            &_regD,  &_regE, 
+            &_regH,  &_regL, 
+            nullptr, &_regA, 
         };
 
         CpuFlagsMapping _regFlag;
@@ -74,22 +74,22 @@ class Cpu {
         #define UNKI    nullptr
         const instructionFunction_t _instructions[256] = {
         //  0x00   0x01   0x02   0x03   0x04   0x05   0x06   0x07   0x08   0x09   0x0A   0x0B   0x0C   0x0D   0x0E   0x0F  //     
-            _nop,  _lxi,  _stax, _inx,  _inr,  _dcr,  _mvi,  _rlc,  UNKI,  _dad,  _ldax, _dcx,  _inr,  _dcr,  _mvi,  _rrc, // 0x00
-            UNKI,  _lxi,  _stax, _inx,  _inr,  _dcr,  _mvi,  _ral,  UNKI,  _dad,  _ldax, _dcx,  _inr,  _dcr,  _mvi,  _rar, // 0x10
-            UNKI,  _lxi,  _shld, _inx,  _inr,  _dcr,  _mvi,  _daa,  UNKI,  _dad,  _lhld, _dcx,  _inr,  _dcr,  _mvi,  _cma, // 0x20
-            UNKI,  _lxi,  _sta,  _inx,  _inr,  _dcr,  _mvi,  _stc,  UNKI,  _dad,  _lda,  _dcx,  _inr,  _dcr,  _mvi,  _cmc, // 0x30
-            _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov, // 0x40
-            _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov, // 0x50
-            _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov, // 0x60
-            _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _hlt,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov,  _mov, // 0x70
-            _add,  _add,  _add,  _add,  _add,  _add,  _add,  _add,  _adc,  _adc,  _adc,  _adc,  _adc,  _adc,  _adc,  _adc, // 0x80
-            _sub,  _sub,  _sub,  _sub,  _sub,  _sub,  _sub,  _sub,  _sbb,  _sbb,  _sbb,  _sbb,  _sbb,  _sbb,  _sbb,  _sbb, // 0x90
-            _ana,  _ana,  _ana,  _ana,  _ana,  _ana,  _ana,  _ana,  _xra,  _xra,  _xra,  _xra,  _xra,  _xra,  _xra,  _xra, // 0xA0
-            _ora,  _ora,  _ora,  _ora,  _ora,  _ora,  _ora,  _ora,  _cmp,  _cmp,  _cmp,  _cmp,  _cmp,  _cmp,  _cmp,  _cmp, // 0xB0
-            _rnz,  _pop,  _jnz,  _jmp,  _cnz,  _push, _adi,  _rst,  _rz,   _ret,  _jz,   UNKI,  _cz,   _call, _aci,  _rst, // 0xC0
-            _rnc,  _pop,  _jnc,  _out,  _cnc,  _push, _sui,  _rst,  _rc,   UNKI,  _jc,   _in,   _cc,   UNKI,  _sbi,  _rst, // 0xD0
-            _rpo,  _pop,  _jpo,  _xthl, _cpo,  _push, _ani,  _rst,  _rpe,  _pchl, _jpe,  _xchg, _cpe,  UNKI,  _xri,  _rst, // 0xE0
-            _rp,   _pop,  _jp,   _di,   _cp,   _push, _ori,  _rst,  _rm,   _sphl, _jm,   _ei,   _cm,   UNKI,  _cpi,  _rst, // 0xF0
+            &Cpu::_nop,  &Cpu::_lxi,  &Cpu::_stax, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rlc,  UNKI,        &Cpu::_dad,  &Cpu::_ldax, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rrc, // 0x00
+            UNKI,        &Cpu::_lxi,  &Cpu::_stax, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_ral,  UNKI,        &Cpu::_dad,  &Cpu::_ldax, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rar, // 0x10
+            UNKI,        &Cpu::_lxi,  &Cpu::_shld, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_daa,  UNKI,        &Cpu::_dad,  &Cpu::_lhld, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_cma, // 0x20
+            UNKI,        &Cpu::_lxi,  &Cpu::_sta,  &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_stc,  UNKI,        &Cpu::_dad,  &Cpu::_lda,  &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_cmc, // 0x30
+            &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov, // 0x40
+            &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov, // 0x50
+            &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov, // 0x60
+            &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_hlt,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov,  &Cpu::_mov, // 0x70
+            &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_add,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc,  &Cpu::_adc, // 0x80
+            &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sub,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb,  &Cpu::_sbb, // 0x90
+            &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_ana,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra,  &Cpu::_xra, // 0xA0
+            &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_ora,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp,  &Cpu::_cmp, // 0xB0
+            &Cpu::_rnz,  &Cpu::_pop,  &Cpu::_jnz,  &Cpu::_jmp,  &Cpu::_cnz,  &Cpu::_push, &Cpu::_adi,  &Cpu::_rst,  &Cpu::_rz,   &Cpu::_ret,  &Cpu::_jz,   UNKI,        &Cpu::_cz,   &Cpu::_call, &Cpu::_aci,  &Cpu::_rst, // 0xC0
+            &Cpu::_rnc,  &Cpu::_pop,  &Cpu::_jnc,  &Cpu::_out,  &Cpu::_cnc,  &Cpu::_push, &Cpu::_sui,  &Cpu::_rst,  &Cpu::_rc,   UNKI,        &Cpu::_jc,   &Cpu::_in,   &Cpu::_cc,   UNKI,        &Cpu::_sbi,  &Cpu::_rst, // 0xD0
+            &Cpu::_rpo,  &Cpu::_pop,  &Cpu::_jpo,  &Cpu::_xthl, &Cpu::_cpo,  &Cpu::_push, &Cpu::_ani,  &Cpu::_rst,  &Cpu::_rpe,  &Cpu::_pchl, &Cpu::_jpe,  &Cpu::_xchg, &Cpu::_cpe,  UNKI,        &Cpu::_xri,  &Cpu::_rst, // 0xE0
+            &Cpu::_rp,   &Cpu::_pop,  &Cpu::_jp,   &Cpu::_di,   &Cpu::_cp,   &Cpu::_push, &Cpu::_ori,  &Cpu::_rst,  &Cpu::_rm,   &Cpu::_sphl, &Cpu::_jm,   &Cpu::_ei,   &Cpu::_cm,   UNKI,        &Cpu::_cpi,  &Cpu::_rst, // 0xF0
         //  0x00   0x01   0x02   0x03   0x04   0x05   0x06   0x07   0x08   0x09   0x0A   0x0B   0x0C   0x0D   0x0E   0x0F  // 
         };
         #undef UNKI

@@ -18,16 +18,15 @@
 #include "viewcontrol.hpp"
 
 #ifdef EMULATE_OLD_UMPK
-    #define OS_FILE "../data/old.bin"
+    #define OS_FILE "./data/old.bin"
 #else
-    // #define OS_FILE "../data/scaned-os.bin"
-    #define OS_FILE "../data/scaned-os-fixed.bin"
+    #define OS_FILE "./data/scaned-os.bin"
 #endif
 
 class Controller {
     public:
         Controller(ViewControl& vc) : 
-            _umpkThread(_umpkWork, this),
+            _umpkThread(&Controller::_umpkWork, this),
             _disasm(_umpk.getBus()),
             view(vc)
         {}

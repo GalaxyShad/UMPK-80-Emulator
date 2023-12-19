@@ -65,12 +65,16 @@ class View : public ViewControl {
         void _update() {
             ImGui::SFML::Update(_window, _deltaClock.restart());
 
+            _windowDecompiler();
             _windowCode();
             // _windowInPorts();
             // _windowOutPorts();
             _windowControls();
             _windowMemory();
-            _windowCpuInfo();
+
+            _windowCpuInfoUnsafe();
+            // _windowCpuInfo();
+
             _windowKeyboard();
             _windowPort5();
             _windowTests();
@@ -192,6 +196,60 @@ class View : public ViewControl {
             ImGui::End();
         }
 
+        void _windowDecompiler() {
+            ImGui::Begin("Decompiler");
+
+            static char decompileFileName[255] = {0};
+            static uint16_t fromAdr = 0x0000;
+            static uint16_t len = 0x0100;
+
+            ImGui::PushItemWidth(200);
+            ImGui::InputText("File path", decompileFileName, 255);
+
+            uint16_t min = 0x0000;
+            uint16_t max = 0x0FFF;
+            ImGui::DragScalar(
+                "Start ADR",
+                ImGuiDataType_U16,
+                &fromAdr,
+                1,
+                &min,
+                &max,
+                "%04x"
+            );
+
+            ImGui::DragScalar(
+                "Length",
+                ImGuiDataType_U16,
+                &len,
+                1,
+                &min,
+                &max,
+                "%04x"
+            );
+
+            if (ImGui::Button("Decompile")) {
+                _dataContext.decompileToFile(std::string(decompileFileName), fromAdr, len);
+                ImGui::OpenPopup("Success");
+            }
+
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            if (ImGui::BeginPopupModal("Success", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("Docompiled succesfully");
+                ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0))) { 
+                    ImGui::CloseCurrentPopup(); 
+                }
+
+                ImGui::SetItemDefaultFocus();
+                ImGui::EndPopup();
+            }
+
+            ImGui::End();
+        }
+
         void _windowMemory() {
             ImGui::Begin("Memory");
             if (ImGui::BeginTable(
@@ -281,8 +339,6 @@ class View : public ViewControl {
                 }
             }
 
-
-            
             ImGui::EndChild();
 
             // ImGui::PushItemWidth(-100);
@@ -295,166 +351,166 @@ class View : public ViewControl {
 
             Cpu& cpu = _dataContext.getUmpk().getCpu();
 
-            // ImGui::BeginChild(
-            //     ImGui::GetID((void*)(intptr_t)0), 
-            //     ImVec2(320, 100), 
-            //     true
-            // );
+            // // ImGui::BeginChild(
+            // //     ImGui::GetID((void*)(intptr_t)0), 
+            // //     ImVec2(320, 100), 
+            // //     true
+            // // );
 
-            ImGui::Text("Registers");
+            // ImGui::Text("Registers");
 
-            uint8_t regs[8] = {0};
-            const char* labels[] = {
-                "B", "C",
-                "D", "E",
-                "H", "L"
-            };
-            for (int c = 0; c < 6; c++) {
+            // uint8_t regs[8] = {0};
+            // const char* labels[] = {
+            //     "B", "C",
+            //     "D", "E",
+            //     "H", "L"
+            // };
+            // for (int c = 0; c < 6; c++) {
                     
-                regs[c] = cpu.getRegister((Cpu::Register)c);
+            //     regs[c] = cpu.getRegister((Cpu::Register)c);
 
-                ImGui::PushItemWidth(50);
-                ImGui::InputScalar(
-                    labels[c],     
-                    ImGuiDataType_U8,  
-                    &regs[c],
-                    NULL, NULL, 
-                    "%02X"
-                );
+            //     ImGui::PushItemWidth(50);
+            //     ImGui::InputScalar(
+            //         labels[c],     
+            //         ImGuiDataType_U8,  
+            //         &regs[c],
+            //         NULL, NULL, 
+            //         "%02X"
+            //     );
 
-                if (c % 2 == 0) ImGui::SameLine();
-            }
-
-            ImGui::Text("Flags");
-            CpuFlagsMapping flags = cpu.getFlags();
-
-            bool boolFlags[5] = {
-                (bool)flags.carry,
-                (bool)flags.sign,
-                (bool)flags.zero,
-                (bool)flags.auxcarry,
-                (bool)flags.parry
-            };
-
-            const char* labelFlags[5] = {
-                "Carry",
-                "Sign",
-                "Zero",
-                "AC",
-                "Parrity"
-            };
-
-
-            for (int i = 0; i < 5; i++) {
-                ImGui::Checkbox(labelFlags[i], &boolFlags[i]);
-                ImGui::SameLine();
-            }
-
-            // ImGui::EndChild();
-
-            ImGui::End();
-
-
-
-            // if (ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            //     ImGui::TableSetupColumn("B");
-            //     ImGui::TableSetupColumn("C");
-            //     ImGui::TableSetupColumn("D");
-            //     ImGui::TableSetupColumn("E");
-            //     ImGui::TableSetupColumn("H");
-            //     ImGui::TableSetupColumn("L");
-            //     ImGui::TableSetupColumn("M");
-            //     ImGui::TableSetupColumn("A");
-            //     ImGui::TableHeadersRow();
-
-            //     ImGui::TableNextRow();
-
-            //     uint8_t regs[8] = {0};
-
-            //     for (int c = 0; c < 8; c++) {
-            //         ImGui::TableSetColumnIndex(c);
-
-            //         if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
-            //             regs[c] = cpu.getRegister((Cpu::Register)c);
-
-
-            //         ImGui::PushItemWidth(-1);
-            //         ImGui::InputScalar(
-            //             "a",     
-            //             ImGuiDataType_U8,  
-            //             &regs[c],
-            //             NULL, NULL, 
-            //             "%02x"
-            //         );
-            //         // ImGui::PushItemWidth();
-
-
-            //         // if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
-            //         //     ImGui::Text("%02x", cpu.getRegister((Cpu::Register)c));
-            //         // else
-            //         //     ImGui::Text("ERR");
-
-            //     }
-            //     ImGui::EndTable();
+            //     if (c % 2 == 0) ImGui::SameLine();
             // }
 
-            // if (ImGui::BeginTable("Flags", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            //     ImGui::TableSetupColumn("Carry");
-            //     ImGui::TableSetupColumn("Sign");
-            //     ImGui::TableSetupColumn("Zero");
-            //     ImGui::TableSetupColumn("AC");
-            //     ImGui::TableSetupColumn("Parrity");
-            //     ImGui::TableHeadersRow();
+            // ImGui::Text("Flags");
+            // CpuFlagsMapping flags = cpu.getFlags();
 
-            //     ImGui::TableNextRow();
+            // bool boolFlags[5] = {
+            //     (bool)flags.carry,
+            //     (bool)flags.sign,
+            //     (bool)flags.zero,
+            //     (bool)flags.auxcarry,
+            //     (bool)flags.parry
+            // };
 
-            //     CpuFlagsMapping flags = cpu.getFlags();
+            // const char* labelFlags[5] = {
+            //     "Carry",
+            //     "Sign",
+            //     "Zero",
+            //     "AC",
+            //     "Parrity"
+            // };
 
-            //     ImGui::TableSetColumnIndex(0);
-            //     ImGui::Text("%x", flags.carry);
-            //     ImGui::TableSetColumnIndex(1);
-            //     ImGui::Text("%x", flags.sign);
-            //     ImGui::TableSetColumnIndex(2);
-            //     ImGui::Text("%x", flags.zero);
-            //     ImGui::TableSetColumnIndex(3);
-            //     ImGui::Text("%x", flags.auxcarry);
-            //     ImGui::TableSetColumnIndex(4);
-            //     ImGui::Text("%x", flags.parry);
 
-            //     ImGui::EndTable();
+            // for (int i = 0; i < 5; i++) {
+            //     ImGui::Checkbox(labelFlags[i], &boolFlags[i]);
+            //     ImGui::SameLine();
             // }
 
-            // if (ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            //     ImGui::TableSetupColumn("Program Counter");
-            //     ImGui::TableSetupColumn("Stack Pointer");
-            //     ImGui::TableSetupColumn("Reg CMD");
-            //     ImGui::TableHeadersRow();
-
-            //     ImGui::TableNextRow();
-
-            //     ImGui::TableSetColumnIndex(0);
-            //     ImGui::Text("%04x", cpu.getProgramCounter());
-            //     ImGui::TableSetColumnIndex(1);
-            //     ImGui::Text("%04x", cpu.getStackPointer());
-            //     ImGui::TableSetColumnIndex(2);
-            //     ImGui::Text("%02x", cpu.getCommandRegister());
-                
-            //     ImGui::EndTable();
-            // }
-
-            // ImGui::InputScalar(
-            //     "Manual Program Counter",     
-            //     ImGuiDataType_U16,    
-            //     &_inputValuePgCounter,
-            //     NULL, NULL, 
-            //     "%04x"
-            // );
-
-            // if (ImGui::Button("Set")) {
-            //     // _dataContext.onSetProgramCounter(_inputValuePgCounter);
-            // }
+            // // ImGui::EndChild();
 
             // ImGui::End();
+
+
+
+            if (ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("B");
+                ImGui::TableSetupColumn("C");
+                ImGui::TableSetupColumn("D");
+                ImGui::TableSetupColumn("E");
+                ImGui::TableSetupColumn("H");
+                ImGui::TableSetupColumn("L");
+                ImGui::TableSetupColumn("M");
+                ImGui::TableSetupColumn("A");
+                ImGui::TableHeadersRow();
+
+                ImGui::TableNextRow();
+
+                uint8_t regs[8] = {0};
+
+                for (int c = 0; c < 8; c++) {
+                    ImGui::TableSetColumnIndex(c);
+
+                    if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+                        regs[c] = cpu.getRegister((Cpu::Register)c);
+
+
+                    ImGui::PushItemWidth(-1);
+                    ImGui::InputScalar(
+                        "a",     
+                        ImGuiDataType_U8,  
+                        &regs[c],
+                        NULL, NULL, 
+                        "%02x"
+                    );
+                    // ImGui::PushItemWidth();
+
+
+                    // if (c != 6 || (c == 6 && cpu.getRegister(Cpu::Register::H) < 0x10))
+                    //     ImGui::Text("%02x", cpu.getRegister((Cpu::Register)c));
+                    // else
+                    //     ImGui::Text("ERR");
+
+                }
+                ImGui::EndTable();
+            }
+
+            if (ImGui::BeginTable("Flags", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Carry");
+                ImGui::TableSetupColumn("Sign");
+                ImGui::TableSetupColumn("Zero");
+                ImGui::TableSetupColumn("AC");
+                ImGui::TableSetupColumn("Parrity");
+                ImGui::TableHeadersRow();
+
+                ImGui::TableNextRow();
+
+                CpuFlagsMapping flags = cpu.getFlags();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%x", flags.carry);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%x", flags.sign);
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%x", flags.zero);
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%x", flags.auxcarry);
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%x", flags.parry);
+
+                ImGui::EndTable();
+            }
+
+            if (ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Program Counter");
+                ImGui::TableSetupColumn("Stack Pointer");
+                ImGui::TableSetupColumn("Reg CMD");
+                ImGui::TableHeadersRow();
+
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%04x", cpu.getProgramCounter());
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%04x", cpu.getStackPointer());
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%02x", cpu.getCommandRegister());
+                
+                ImGui::EndTable();
+            }
+
+            ImGui::InputScalar(
+                "Manual Program Counter",     
+                ImGuiDataType_U16,    
+                &_inputValuePgCounter,
+                NULL, NULL, 
+                "%04x"
+            );
+
+            if (ImGui::Button("Set")) {
+                _dataContext.onSetProgramCounter(_inputValuePgCounter);
+            }
+
+            ImGui::End();
         }
 
         void _windowCpuInfo() {

@@ -26,7 +26,7 @@ class BusDeviceWritable {
 class Bus {
     public:
         void memoryWrite(uint16_t adr, uint8_t data) {
-            if (adr < ROM_SIZE) return;
+            // if (adr < ROM_SIZE) return;
 
             _memory[adr & 0x0FFF] = data;
         }
@@ -58,7 +58,6 @@ class Bus {
         }
 
         uint8_t portIn(uint8_t port) {
-            // return 0x00;
             return (_inDevices[port] != nullptr) ? _inDevices[port]->busPortRead() : 0x00;
         }
 

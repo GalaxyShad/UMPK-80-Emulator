@@ -6,6 +6,7 @@
 #include <mutex>
 #include <fstream>
 #include <vector>
+#include <iomanip>
 
 #include <SFML/Audio.hpp>
 #include <cmath>
@@ -33,6 +34,44 @@ class Controller {
 
         ~Controller() {
             _umpkThread.detach();
+        }
+
+        void decompileToFile(std::string filename, uint16_t fromAdr, uint16_t len) {
+            std::ofstream stream(filename);
+
+            _disasm.reset(fromAdr);
+
+            for (int i = 0; i < len; i++) {
+                std::vector<uint8_t> mc = _disasm.getBytes();
+                uint16_t adr = _disasm.getPgCounter();
+
+                std::string instr = _disasm.translate();
+
+                stream << std::hex 
+                       << std::uppercase 
+                       << std::setw(4) 
+                       << std::setfill('0') 
+                       << adr << " | ";
+
+                for (int j = 0; j < 3; j++) {
+                    if (j == 1)
+                        stream << ' ';
+
+                    if (j < mc.size()) {
+                        stream << std::hex 
+                            << std::uppercase 
+                            << std::setw(2) 
+                            << std::setfill('0') 
+                            << (int)mc[j];    
+                    } else {
+                        stream << "  ";
+                    }
+                }
+
+                stream << " | " << instr <<  '\n';
+            }
+
+            stream.close();
         }
 
         void onBtnStart() {
@@ -89,8 +128,6 @@ class Controller {
             _umpk.getCpu().setProgramCounter(value);
             _umpkMutex.unlock();
         }
-
-
 
         std::vector<uint8_t> readBinaryFile(std::string path) {
             std::ifstream file(path, std::ios::binary);
@@ -190,8 +227,5 @@ class Controller {
                 _umpk.getBus().memoryWrite(startAdr + i, test[i]);
             }
         }
-
-
- 
 };
 

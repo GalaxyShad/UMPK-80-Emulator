@@ -1,5 +1,6 @@
-g++ src/*.cpp lib/*.cpp -I lib -L lib/lib -lsfml-window -lsfml-system -lsfml-audio -lsfml-graphics -lfreeglut -lopengl32 -o build/app.exe
+cmake -S . -B build -G "Ninja"
+cmake --build build --config Debug
 
-cd build
-app.exe
+cd build/bin
+umpk-80-emu-ui.exe
 cd ..

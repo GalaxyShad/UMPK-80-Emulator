@@ -28,7 +28,7 @@ public:
         m_components.push_back(
             std::make_pair("CPU controls", makeCpuControl()));
 
-        m_components.push_back(std::make_pair("Display", new UiDisplay(6)));
+        m_components.push_back(std::make_pair("Display", new UiDisplay(m_controller)));
 
         m_components.push_back(std::make_pair("RAM", new UiMemoryDump(m_ram)));
         m_components.push_back(std::make_pair("ROM", new UiMemoryDump(m_rom)));
@@ -48,6 +48,7 @@ public:
             UiListingLine{0x8000, std::vector<uint8_t>(), "SomeInstr"});
         listingProps.cursorPos = 0;
         listingProps.enableScroll = false;
+
         m_components.push_back(
             std::make_pair("Listing", new UiListing(listingProps)));
 
@@ -109,8 +110,16 @@ private:
 
         UiCpuControlEmits cpuControlEmits = {};
 
-        cpuControlEmits.onControlButton = [](const char *btn) {
+        cpuControlEmits.onControlButton = [=](const char *btn) {
             std::cout << btn << "\n";
+
+            auto strbtn = std::string(btn);
+
+            if (strbtn == "Start") {
+                m_controller.onBtnStart();
+            } else if (strbtn == "Stop") {
+                m_controller.onButtonStop();
+            }
         };
 
         cpuControlEmits.onFlagChange = [](UiCpuControlFlags flag, bool value) {
@@ -128,7 +137,6 @@ private:
     void _applyTheme() {
         ImGuiStyle &style = ImGui::GetStyle();
 
-        // style.WindowPadding = ImVec2(15, 15);
         style.WindowRounding = 8.0;
         style.FramePadding = ImVec2(5, 5);
         style.ItemSpacing = ImVec2(12, 8);
@@ -177,10 +185,6 @@ private:
             ImVec4(0.26, 0.59, 0.98, 0.67);
         style.Colors[ImGuiCol_ResizeGripActive] =
             ImVec4(0.06, 0.05, 0.07, 1.00);
-        // style.Colors[ImGuiCol_But] = ImVec4(0.40, 0.39, 0.38, 0.16);
-        // style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.40, 0.39, 0.38,
-        // 0.39); style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.40, 0.39,
-        // 0.38, 1.00);
         style.Colors[ImGuiCol_PlotLines] = ImVec4(0.61, 0.61, 0.61, 1.00);
         style.Colors[ImGuiCol_PlotLinesHovered] =
             ImVec4(1.00, 0.43, 0.35, 1.00);
@@ -188,7 +192,5 @@ private:
         style.Colors[ImGuiCol_PlotHistogramHovered] =
             ImVec4(1.00, 0.60, 0.00, 1.00);
         style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25, 1.00, 0.00, 0.43);
-        // style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00, 0.98,
-        // 0.95, 0.73);
     }
 };

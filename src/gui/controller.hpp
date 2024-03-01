@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONTROLLER_HPP
+#define CONTROLLER_HPP
 
 #include <chrono>
 #include <fstream>
@@ -7,7 +8,6 @@
 #include <mutex>
 #include <thread>
 #include <vector>
-
 
 #include <SFML/Audio.hpp>
 #include <cmath>
@@ -18,7 +18,6 @@
 #include "../core/dj.hpp"
 #include "../core/umpk80.hpp"
 
-#include "gui-app.hpp"
 
 
 #ifdef EMULATE_OLD_UMPK
@@ -215,3 +214,5 @@ private:
         }
     }
 };
+
+#endif // CONTROLLER_HPP

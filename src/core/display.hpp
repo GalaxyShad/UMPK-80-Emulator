@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bus.hpp"
-#include "register.hpp"
 
 #include <iostream>
 

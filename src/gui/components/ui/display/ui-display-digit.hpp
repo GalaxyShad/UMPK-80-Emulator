@@ -8,7 +8,8 @@ struct UiDisplayDigitProps {
     int length      = 24;
     int slant       = 4;
     uint32_t lightupColor   = 0x00FF7FFF;
-    uint32_t lightdownColor = 0x0A5F384A;
+    uint32_t lightdownColor = 0x000000FF;
+
     float x = 0;
     float y = 0;
 

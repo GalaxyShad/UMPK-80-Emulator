@@ -1,9 +1,7 @@
-#include "../irenderable.hpp"
+#include "../../irenderable.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
-enum UiDisplayDigitSegments { H, G, F, E, D, C, B, A };
 
 struct UiDisplayDigitProps {
     int thickness   = 4;
@@ -13,10 +11,20 @@ struct UiDisplayDigitProps {
     uint32_t lightdownColor = 0x0A5F384A;
     float x = 0;
     float y = 0;
+
+    UiDisplayDigitProps& setThickness(int value) { thickness = value; return *this; }
+    UiDisplayDigitProps& setLength(int value) { length = value; return *this; }
+    UiDisplayDigitProps& setSlant(int value) { slant = value; return *this; }
+    UiDisplayDigitProps& setLightupColor(uint32_t value) { lightupColor = value; return *this; }
+    UiDisplayDigitProps& setLightdownColor(uint32_t value) { lightdownColor = value; return *this; }
+    UiDisplayDigitProps& setX(float value) { x = value; return *this; }
+    UiDisplayDigitProps& setY(float value) { y = value; return *this; }
 };
 
 class UiDisplayDigit : public IRenderable {
 public: 
+    enum UiDisplayDigitSegments { H, G, F, E, D, C, B, A };
+
     UiDisplayDigit(UiDisplayDigitProps props): m_pos(sf::Vector2f(props.x, props.y)) {
         m_props = props;
 
@@ -149,12 +157,11 @@ public:
         if (newValue & 0b00000100) lightUp(5); 
         if (newValue & 0b00000010) lightUp(6); 
         if (newValue & 0b00000001) lightUp(7); 
-    
     }
 
-    void draw(sf::RenderTarget& wnd) {
+    void draw(sf::RenderTarget& rt) {
         for (int s = 0; s < 8; s++) {
-            wnd.draw(m_parts[s]);
+            rt.draw(m_parts[s]);
         }
     }
 private:

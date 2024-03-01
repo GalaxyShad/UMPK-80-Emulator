@@ -1,0 +1,8 @@
+TabWidth:        4
+IndentWidth:     4
+
+Language: Cpp
+
+Standard: Cpp11
+
+AccessModifierOffset: -4

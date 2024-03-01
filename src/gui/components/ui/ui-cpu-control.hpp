@@ -1,4 +1,4 @@
-#include "irenderable.hpp"
+#include "../irenderable.hpp"
 
 #include <string>
 #include <functional>
@@ -20,8 +20,9 @@ enum UiCpuControlFlags {
 };
 
 struct UiCpuControlEmits {
-    std::function<void(UiCpuControlRegister, uint8_t)>& emitRegisterChange;
-    std::function<void(UiCpuControlFlags, bool)>& emitFlagChange;
+    std::function<void(UiCpuControlRegister, uint8_t)> onRegisterChange;
+    std::function<void(UiCpuControlFlags, bool)> onFlagChange;
+    std::function<void(const char*)> onControlButton;
 };
 
 class UiCpuControl : public IRenderable {
@@ -29,6 +30,7 @@ public:
     UiCpuControl(UiCpuControlEmits emits) : m_emits(emits) {}
 
     void render() override {
+        renderControls();
         renderRegisters();
         renderFlags();
         renderMisc();
@@ -63,18 +65,30 @@ private:
     uint8_t m_registers[8] = { 0 };
     bool m_flags[5] = { 0 };
 
+    const char* m_controlButtons[5] = {
+        "Start", "CMD+", "CMD++", "Stop", "Reset"
+    };
+
+    void renderControls() {
+        for (int i = 0; i < 5; i++) {
+            if (ImGui::Button(m_controlButtons[i]))
+                m_emits.onControlButton(m_controlButtons[i]);
+            
+            ImGui::SameLine();
+        }   
+    }
 
     void renderRegisters() {
-        ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
+        if (!ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            return;
 
-        ImGui::TableSetupColumn("B");
-        ImGui::TableSetupColumn("C");
-        ImGui::TableSetupColumn("D");
-        ImGui::TableSetupColumn("E");
-        ImGui::TableSetupColumn("H");
-        ImGui::TableSetupColumn("L");
-        ImGui::TableSetupColumn("M");
-        ImGui::TableSetupColumn("A");
+        const char* registers[] = {
+            "B", "C", "D", "E", "H", "L", "M", "A"
+        };
+
+        for (auto r : registers) {
+            ImGui::TableSetupColumn(r);
+        }
         ImGui::TableHeadersRow();
 
         ImGui::TableNextRow();
@@ -84,12 +98,12 @@ private:
 
             ImGui::PushItemWidth(-1);
             if (ImGui::InputScalar(
-                "a",     
+                registers[c],     
                 ImGuiDataType_U8, &m_registers[c],
                 NULL, NULL, 
                 "%02X"
             )) {
-                m_emits.emitRegisterChange((UiCpuControlRegister)c, m_registers[c]);
+                m_emits.onRegisterChange((UiCpuControlRegister)c, m_registers[c]);
             }
         }
 
@@ -97,7 +111,8 @@ private:
     }
 
     void renderFlags() {
-        ImGui::BeginTable("Flags", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
+        if (!ImGui::BeginTable("Flags", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            return;
 
         ImGui::TableSetupColumn("Carry");
         ImGui::TableSetupColumn("Sign");
@@ -110,14 +125,17 @@ private:
 
         for (int i = 0; i < 5; i++) {
             ImGui::TableSetColumnIndex(i);
-            ImGui::Checkbox(std::to_string(m_flags[i]).c_str(), &m_flags[i]);
+            if (ImGui::Checkbox(std::to_string(i).c_str(), &m_flags[i])) {
+                m_emits.onFlagChange((UiCpuControlFlags)i, m_flags[i]);
+            }
         }        
 
         ImGui::EndTable();
     }
 
     void renderMisc() {
-        ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
+        if (!ImGui::BeginTable("Misc", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            return;
 
         ImGui::TableSetupColumn("Program Counter");
         ImGui::TableSetupColumn("Stack Pointer");

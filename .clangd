@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: -I/build/_deps/sfml-src/include -I/build/_dep/imgui-src -I/build/_deps/imgui-sfml-src

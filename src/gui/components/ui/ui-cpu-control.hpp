@@ -1,3 +1,6 @@
+#ifndef UI_CPU_CONTROL_HPP
+#define UI_CPU_CONTROL_HPP
+
 #include "../irenderable.hpp"
 
 #include <string>
@@ -154,3 +157,5 @@ private:
         ImGui::EndTable();
     }
 };
+
+#endif // UI_CPU_CONTROL_HPP

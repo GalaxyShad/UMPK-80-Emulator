@@ -1,3 +1,6 @@
+#ifndef UI_DECOMPILER_HPP
+#define UI_DECOMPILER_HPP
+
 #include <imgui.h>
 
 #include "../irenderable.hpp"
@@ -45,3 +48,5 @@ public:
 
 private:
 };
+
+#endif // UI_DECOMPILER_HPP

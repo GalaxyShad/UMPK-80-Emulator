@@ -1,3 +1,6 @@
+#ifndef UI_CMD_TABLE_HPP
+#define UI_CMD_TABLE_HPP
+
 #include <functional>
 #include <imgui.h>
 #include <vector>
@@ -52,3 +55,5 @@ public:
         ImGui::EndTable();
     }
 };
+
+#endif // UI_CMD_TABLE_HPP

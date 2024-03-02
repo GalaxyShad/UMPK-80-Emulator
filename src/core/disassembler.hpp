@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <algorithm>
 #include <cinttypes>
@@ -7,27 +7,20 @@
 
 #include "bus.hpp"
 
-std::string toUpper(const std::string src) {
-    std::string result = src;
-
-    std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-
-    return result;
-}
-
 class Disassembler {
 public:
     struct Instruction {
-        std::string     mnemonic;
-        int             length;
-        std::string     operand = "";
+        std::string mnemonic;
+        int length;
+        std::string operand = "";
     };
 
     struct Result {
         std::vector<uint8_t> bytes;
-        std::string          instruction;
+        std::string instruction;
     };
 
+    // clang-format off
     static Instruction getInstruction(uint8_t opcode) {
         static const Instruction instructions[256] = {
             // 0x00         0x01                   0x02                   0x03                    0x04                   0x05                0x06               0x07            0x08            0x09            0x0A                   0x0B                    0x0C                   0x0D                   0x0E                  0x0F            //     
@@ -49,15 +42,17 @@ public:
 /* 0X0F */  {"RP",      1}, {"POP PSW", 1},        {"JP",      3, "ADR"}, {"DI",      1},         {"CP",      3, "ADR"}, {"PUSH PSW",    1}, {"ORI",  2, "D8"}, {"RST 6",   1}, {"RM",      1}, {"SPHL",    1}, {"JM",      3, "ADR"}, {"EI",      1},         {"CM ",     3, "ADR"}, {"UNKI",    1},        {"CPI",     2, "D8"}, {"RST 7",   1}, // 0XF0
             // 0x00         0x01                   0x02                   0x03                    0x04                   0x05                0x06               0x07            0x08            0x09            0x0A                   0x0B                    0x0C                   0x0D                   0x0E                  0x0F            // 
         };
+        // clang-format on
 
         return instructions[opcode];
     }
 
 public:
-    Disassembler(std::vector<uint8_t>& memory) : _memory(memory) {};
+    Disassembler(std::vector<uint8_t> &memory) : _memory(memory){};
 
     std::string translateOld() {
-        if (_prgCounter >= _memory.size()) return "EOF"; 
+        if (_prgCounter >= _memory.size())
+            return "EOF";
 
         uint8_t opcode = memRead(_prgCounter);
 
@@ -66,13 +61,15 @@ public:
         instruction.mnemonic += " ";
         for (int i = 1; i < instruction.length; i++) {
             char value[8];
-            sprintf(value, "%02x", memRead(_prgCounter + instruction.length-i));
+            sprintf(value, "%02x",
+                    memRead(_prgCounter + instruction.length - i));
             instruction.mnemonic += std::string(value);
         }
 
         _prgCounter += instruction.length;
 
-        return toUpper(instruction.mnemonic) + (instruction.length != 1 ? "h" : "");
+        return toUpper(instruction.mnemonic) +
+               (instruction.length != 1 ? "h" : "");
     }
 
     std::vector<uint8_t> getBytes() {
@@ -88,20 +85,24 @@ public:
         return res;
     }
 
-    void reset() { _prgCounter = 0; } 
-    void reset(uint16_t prgCounter) { _prgCounter = prgCounter; } 
+    void reset() { _prgCounter = 0; }
+    void reset(uint16_t prgCounter) { _prgCounter = prgCounter; }
 
-    uint16_t getPgCounter() {
-        return _prgCounter;
-    }
+    uint16_t getPgCounter() { return _prgCounter; }
 
     bool isEof() { return _prgCounter >= 0x1000; }
 
 private:
-    std::vector<uint8_t>& _memory;
+    std::vector<uint8_t> &_memory;
     uint16_t _prgCounter = 0x0000;
 
-    uint8_t memRead(uint16_t adr) {
-        return _memory[adr];
+    uint8_t memRead(uint16_t adr) { return _memory[adr]; }
+
+    std::string toUpper(const std::string src) {
+        std::string result = src;
+
+        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+
+        return result;
     }
 };

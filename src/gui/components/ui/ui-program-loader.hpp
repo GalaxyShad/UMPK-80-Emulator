@@ -1,11 +1,14 @@
+#ifndef UI_PROGRAM_LOADER_HPP
+#define UI_PROGRAM_LOADER_HPP
+
 #include <imgui.h>
 #include "../irenderable.hpp"
-#include "../../../controller.hpp"
+#include "../../controller.hpp"
 #include "ui-memory-dump.hpp"
 #include "ui-listing.hpp"
-#include "../../../disassembler.hpp"
+#include "../../../core/disassembler.hpp"
 
-class UiProgramLoader : IRenderable {
+class UiProgramLoader : public IRenderable {
 public:
     UiProgramLoader(Controller& controller) 
         : m_controller(controller) 
@@ -21,12 +24,16 @@ public:
         ImGui::SameLine();
 
         if (ImGui::Button("Open", ImVec2(100, 0))) {
-            m_program = m_controller.readBinaryFile(std::string(pathFile));
+            try {
+                m_program = m_controller.readBinaryFile(std::string(pathFile));
 
-            if (m_program.size() == 0)
-                m_errorMessage = "Cannot open a file " + std::string(pathFile);
-            else 
+                if (m_program.size() == 0)
+                    m_errorMessage = "Program size length = 0 bytes " + std::string(pathFile);
+
                 makeLisitng();
+            } catch (std::runtime_error err) {
+                m_errorMessage = "Cannot open a file " + std::string(pathFile);
+            }
         }
 
         if (!m_errorMessage.empty() && m_program.size() == 0)
@@ -36,7 +43,7 @@ public:
             auto succesMessage = "File " + std::string(pathFile) + " is loaded succesfully";
 
             ImGui::TextColored(ImVec4(0, 255, 0, 127), "%s", succesMessage.c_str());
-        } else {
+
             if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
                 
                 if (ImGui::BeginTabItem("RAW")) {
@@ -93,10 +100,15 @@ private:
 
             std::vector<uint8_t> bytes;
             for (int i = 0; i < bytesCount; i++) {
-                bytes.push_back(m_program[prg+i]);
+                int index = prg+i;
+
+                if (index < m_program.size())
+                    bytes.push_back(m_program[index]);
             }
 
             m_listing.push_back(UiListingLine {m_disassembler.getPgCounter(), bytes, instr});
         }
     }
 };
+
+#endif // UI_PROGRAM_LOADER_HPP

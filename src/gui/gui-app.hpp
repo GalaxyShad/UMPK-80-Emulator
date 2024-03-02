@@ -15,6 +15,7 @@
 #include "components/ui/ui-listing.hpp"
 #include "components/ui/ui-memory-dump.hpp"
 #include "components/ui/ui-decompiler.hpp"
+#include "components/ui/ui-program-loader.hpp"
 
 #include "controller.hpp"
 
@@ -40,7 +41,7 @@ public:
         };
 
         m_components.push_back(std::make_pair(
-            "Keyboard", new UiKeyboard(UiKeyboardProps(), emits)));
+            "Keyboard", new UiKeyboard(UiKeyboardProps(), emits, m_controller)));
 
         UiListingProps listingProps = {m_listing, false, nullptr};
 
@@ -53,10 +54,12 @@ public:
             std::make_pair("Listing", new UiListing(listingProps)));
 
         m_components.push_back(std::make_pair(
-            "IO", new UiIoRegister(UiIoRegisterEmits{
+            "IO", new UiIoRegister(m_controller, UiIoRegisterEmits{
                       [](uint8_t val) { std::cout << val << std::endl; }})));
 
         m_components.push_back(std::make_pair("Decompile", new UiDecompiler()));
+
+        m_components.push_back(std::make_pair("Program Loader", new UiProgramLoader(m_controller)));
     }
 
     void start() {

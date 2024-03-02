@@ -1,3 +1,6 @@
+#ifndef UI_MEMORY_DUMP_HPP
+#define UI_MEMORY_DUMP_HPP
+
 #include <functional>
 #include <imgui.h>
 #include <vector>
@@ -48,3 +51,5 @@ public:
 private:
     std::vector<uint8_t>& m_memory;
 };
+
+#endif // UI_MEMORY_DUMP_HPP

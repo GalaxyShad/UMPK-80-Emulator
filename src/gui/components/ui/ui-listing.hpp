@@ -1,3 +1,6 @@
+#ifndef UI_LISTING_HPP
+#define UI_LISTING_HPP
+
 #include <functional>
 #include <imgui.h>
 #include <vector>
@@ -59,3 +62,5 @@ private:
     UiListingProps m_props;
     int prevCursorPos = -1;
 };
+
+#endif // UI_LISTING_HPP

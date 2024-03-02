@@ -64,12 +64,12 @@ public:
     void stop() { _intel8080.interruptRst(1); }
     void restart() { _intel8080.interruptRst(0); }
 
-    void pressKey(Keyboard::Key key) {
+    void pressKey(KeyboardKey key) {
         switch (key) {
-        case Keyboard::Key::ST:
+        case KeyboardKey::ST:
             stop();
             break;
-        case Keyboard::Key::R:
+        case KeyboardKey::R:
             restart();
             break;
         default:
@@ -78,12 +78,12 @@ public:
         }
     }
 
-    void releaseKey(Keyboard::Key key) {
+    void releaseKey(KeyboardKey key) {
         switch (key) {
-        case Keyboard::Key::ST:
+        case KeyboardKey::ST:
             return;
             break;
-        case Keyboard::Key::R:
+        case KeyboardKey::R:
             return;
             break;
         default:

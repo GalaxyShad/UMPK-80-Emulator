@@ -6,20 +6,7 @@
 #include "keyboard.hpp"
 #include "register.hpp"
 
-
 #include <cinttypes>
-
-#ifdef EMULATE_OLD_UMPK
-#define UMPK80_PORT_SCAN 0x28
-#define UMPK80_PORT_KEYBOARD 0x18
-#define UMPK80_PORT_DISPLAY 0x38
-#else
-#define UMPK80_PORT_SPEAKER 0x04
-#define UMPK80_PORT_IO 0x05
-#define UMPK80_PORT_KEYBOARD 0x06
-#define UMPK80_PORT_DISPLAY 0x06
-#define UMPK80_PORT_SCAN 0x07
-#endif
 
 #define UMPK80_OS_SIZE 0x800
 
@@ -112,14 +99,29 @@ private:
 
     RegisterControlStep _registerStepExec;
 
+private:
+#ifdef EMULATE_OLD_UMPK
+    const uint8_t PORT_SPEAKER = 0x04;
+    const uint8_t PORT_IO = 0x05;
+    const uint8_t PORT_KEYBOARD = 0x18;
+    const uint8_t PORT_DISPLAY = 0x38;
+    const uint8_t PORT_SCAN = 0x28;
+#else
+    const uint8_t PORT_SPEAKER  = 0x04;
+    const uint8_t PORT_IO       = 0x05;
+    const uint8_t PORT_KEYBOARD = 0x06;
+    const uint8_t PORT_DISPLAY  = 0x06;
+    const uint8_t PORT_SCAN     = 0x07;
+#endif
+private:
     void _bindDevices() {
-        _bus.portBindOut(UMPK80_PORT_SCAN, _registerScan);
+        _bus.portBindOut(PORT_SCAN, _registerScan);
 
-        _bus.portBindIn(UMPK80_PORT_KEYBOARD, _keyboard);
-        _bus.portBindOut(UMPK80_PORT_DISPLAY, _display);
+        _bus.portBindIn(PORT_KEYBOARD, _keyboard);
+        _bus.portBindOut(PORT_DISPLAY, _display);
 
-        _bus.portBindIn(UMPK80_PORT_IO, _register5In);
-        _bus.portBindOut(UMPK80_PORT_IO, _register5Out);
+        _bus.portBindIn(PORT_IO, _register5In);
+        _bus.portBindOut(PORT_IO, _register5Out);
 
         _bus.portBindOut(0xE, _registerStepExec);
     }

@@ -51,7 +51,7 @@ public:
         listingProps.enableScroll = false;
 
         m_components.push_back(
-            std::make_pair("Listing", new UiListing(listingProps)));
+            std::make_pair("Listing", new UiListingDecompiler(m_controller)));
 
         m_components.push_back(std::make_pair(
             "IO", new UiIoRegister(m_controller, UiIoRegisterEmits{
@@ -63,7 +63,7 @@ public:
     }
 
     void start() {
-        _applyTheme();
+        // _applyTheme();
 
         while (m_window.isOpen()) {
             handleEvents();
@@ -85,6 +85,10 @@ private:
 
     void update() {
         ImGui::SFML::Update(m_window, m_deltaClock.restart());
+
+#ifdef _DEBUG
+        ImGui::ShowDemoWindow();
+#endif // DEBUG
 
         for (auto i : m_components) {
             ImGui::Begin(i.first);
@@ -115,14 +119,6 @@ private:
 
         cpuControlEmits.onControlButton = [=](const char *btn) {
             std::cout << btn << "\n";
-
-            auto strbtn = std::string(btn);
-
-            if (strbtn == "Start") {
-                m_controller.onBtnStart();
-            } else if (strbtn == "Stop") {
-                m_controller.onButtonStop();
-            }
         };
 
         cpuControlEmits.onFlagChange = [](UiCpuControlFlags flag, bool value) {

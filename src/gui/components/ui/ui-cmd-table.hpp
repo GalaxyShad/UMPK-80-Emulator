@@ -47,9 +47,10 @@ public:
             for (int column = 0; column < 16; column++) {
                 ImGui::TableSetColumnIndex(column+1);
                                         
-                Disassembler::Instruction instr = Disassembler::getInstruction(row * 16 + column);
-
+                auto instr = Disassembler::getInstruction(row * 16 + column);
+                
                 ImGui::Selectable((instr.mnemonic + " " + instr.operand).c_str());
+                ImGui::SetItemTooltip("%02X", (row << 4) | column);
             }
         }
         ImGui::EndTable();

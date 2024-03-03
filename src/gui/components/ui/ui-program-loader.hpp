@@ -14,7 +14,7 @@ public:
         : m_controller(controller) 
         , m_raw(m_program.data(), m_program.size())
         , m_decompiled(UiListingProps {m_listing, false, nullptr})
-        , m_disassembler(m_program)
+        , m_disassembler(m_program.data(), m_program.size())
     {}
 
     void render() override {

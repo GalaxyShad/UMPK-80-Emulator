@@ -3,4 +3,5 @@
 int main() {
     GuiApp app;
     app.start();
+    return 0;
 }

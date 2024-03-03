@@ -25,7 +25,7 @@ class Controller {
 public:
     Controller(class GuiApp& gui)
         : _umpkThread(&Controller::_umpkWork, this),
-          _disasm(*(new std::vector<uint8_t>())) {}
+          _disasm(nullptr, 0) {}
 
     ~Controller() { _umpkThread.detach(); }
 
@@ -45,6 +45,13 @@ public:
     void port5In(uint8_t data);
 
     void onSetProgramCounter(uint16_t value);
+    
+    uint8_t getRegister(Cpu::Register reg) { return _umpk.getCpu().getRegister(reg); }
+    void setRegister(Cpu::Register reg, uint8_t value) {
+        _umpkMutex.lock();
+        _umpk.getCpu().setRegister(reg, value);
+        _umpkMutex.unlock();
+    }
 
     std::vector<uint8_t> readBinaryFile(std::string path);
 

@@ -1,11 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cinttypes>
 #include <string>
 #include <vector>
-
-#include "bus.hpp"
 
 class Disassembler {
 public:
@@ -16,8 +13,10 @@ public:
     };
 
     struct Result {
-        std::vector<uint8_t> bytes;
+        uint16_t address;
         std::string instruction;
+        uint8_t bytesCount;
+        uint8_t bytes[3];
     };
 
     // clang-format off
@@ -48,29 +47,45 @@ public:
     }
 
 public:
-    Disassembler(std::vector<uint8_t> &memory) : _memory(memory){};
+    Disassembler(const uint8_t* memory, size_t size) : _memory(memory), _memsize(size) {};
 
-    std::string translateOld() {
-        if (_prgCounter >= _memory.size())
-            return "EOF";
+    Result translate() {
+        if (_prgCounter >= _memsize)
+            return { _prgCounter, "EOF", 0, {0}};
 
         uint8_t opcode = memRead(_prgCounter);
 
         Instruction instruction = getInstruction(opcode);
 
-        instruction.mnemonic += " ";
+        Result res = {};
+
+        std::string mnemonic = instruction.mnemonic;
+
+        res.address = _prgCounter;
+        res.bytes[0] = opcode;
+        res.bytesCount = instruction.length;
+
+        mnemonic += " ";
         for (int i = 1; i < instruction.length; i++) {
+            int index = _prgCounter + instruction.length - i;
+            if (index >= _memsize)
+                break;
+
+            res.bytes[i] = memRead(_prgCounter + i);
+
             char value[8];
-            sprintf(value, "%02x",
-                    memRead(_prgCounter + instruction.length - i));
-            instruction.mnemonic += std::string(value);
+            sprintf(value, "%02X", memRead(index));
+            mnemonic += std::string(value);
         }
+
+        res.instruction = toUpper(mnemonic) + (instruction.length != 1 ? "h" : "");
 
         _prgCounter += instruction.length;
 
-        return toUpper(instruction.mnemonic) +
-               (instruction.length != 1 ? "h" : "");
+        return res;
     }
+
+    std::string translateOld() { return std::string(translate().instruction); }
 
     std::vector<uint8_t> getBytes() {
         std::vector<uint8_t> res;
@@ -93,7 +108,8 @@ public:
     bool isEof() { return _prgCounter >= 0x1000; }
 
 private:
-    std::vector<uint8_t> &_memory;
+    const uint8_t* _memory;
+    size_t _memsize;
     uint16_t _prgCounter = 0x0000;
 
     uint8_t memRead(uint16_t adr) { return _memory[adr]; }

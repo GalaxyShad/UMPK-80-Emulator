@@ -65,11 +65,10 @@ private:
     UiCpuControlEmits m_emits;
     Controller& m_controller;
 
-    uint16_t m_stackPointer = 0x0000;
+    uint16_t m_stackPointer   = 0x0000;
     uint16_t m_programCounter = 0x0000;
-    uint8_t m_cmd = 0x00;
+    uint8_t  m_cmd = 0x00;
     
-
     uint8_t m_registers[8] = { 0 };
     bool m_flags[5] = { 0 };
 
@@ -79,8 +78,17 @@ private:
 
     void renderControls() {
         for (int i = 0; i < 5; i++) {
-            if (ImGui::Button(m_controlButtons[i]))
+            if (ImGui::Button(m_controlButtons[i])) {
+                switch (i) {
+                    case 0: m_controller.onBtnStart(); break;
+                    case 1: m_controller.onBtnNextCommand(); break;
+                    case 2:  break;
+                    case 3: m_controller.onButtonStop(); break;
+                    case 4: m_controller.onBtnReset(); break;
+                }
+
                 m_emits.onControlButton(m_controlButtons[i]);
+            }
             
             ImGui::SameLine();
         }   
@@ -101,17 +109,28 @@ private:
 
         ImGui::TableNextRow();
 
+        auto& cpu = m_controller.umpk().getCpu();
+
+        for (int i = 0; i < 8; i++)
+            m_registers[i] = m_controller.getRegister((Cpu::Register)i);
+
         for (int c = 0; c < 8; c++) {
             ImGui::TableSetColumnIndex(c);
 
             ImGui::PushItemWidth(-1);
-            if (ImGui::InputScalar(
-                registers[c],     
-                ImGuiDataType_U8, &m_registers[c],
-                NULL, NULL, 
-                "%02X"
-            )) {
-                m_emits.onRegisterChange((UiCpuControlRegister)c, m_registers[c]);
+
+            if (m_controller.isUmpkRunning()) {
+                ImGui::Text("%02X", m_registers[c]);
+            } else {
+                if (ImGui::InputScalar(
+                    registers[c],     
+                    ImGuiDataType_U8, &m_registers[c],
+                    NULL, NULL, 
+                    "%02X"
+                )) {
+                    m_controller.setRegister((Cpu::Register)c, m_registers[c]);
+                    m_emits.onRegisterChange((UiCpuControlRegister)c, m_registers[c]);
+                }
             }
         }
 
@@ -131,12 +150,24 @@ private:
 
         ImGui::TableNextRow();
 
-        for (int i = 0; i < 5; i++) {
-            ImGui::TableSetColumnIndex(i);
-            if (ImGui::Checkbox(std::to_string(i).c_str(), &m_flags[i])) {
-                m_emits.onFlagChange((UiCpuControlFlags)i, m_flags[i]);
-            }
-        }        
+        auto& cpu = m_controller.umpk().getCpu();
+        auto flags = cpu.getFlags();
+
+        if (m_controller.isUmpkRunning()) {
+            uint8_t values[5] = { flags.carry, flags.sign, flags.zero, flags.auxcarry, flags.parry };
+
+            for (int i = 0; i < 5; i++) {
+                ImGui::TableSetColumnIndex(i);
+                ImGui::Text("%s", values[i] ? "ACTIVE" : "-");
+            }        
+        } else {
+             for (int i = 0; i < 5; i++) {
+                ImGui::TableSetColumnIndex(i);
+                if (ImGui::Checkbox(std::to_string(i).c_str(), &m_flags[i])) {
+                    m_emits.onFlagChange((UiCpuControlFlags)i, m_flags[i]);
+                }
+            }      
+        }
 
         ImGui::EndTable();
     }

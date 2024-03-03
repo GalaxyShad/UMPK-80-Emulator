@@ -26,7 +26,7 @@ class BusDeviceWritable {
 class Bus {
     public:
         void memoryWrite(uint16_t adr, uint8_t data) {
-            // if (adr < ROM_SIZE) return;
+            if (adr < ROM_SIZE) return;
 
             _memory[adr & 0x0FFF] = data;
         }
@@ -34,6 +34,9 @@ class Bus {
         uint8_t memoryRead(uint16_t adr) {
             return _memory[adr & 0x0FFF];
         }
+
+        const uint8_t& romFirst() { return _memory[0]; }
+        const uint8_t& ramFirst() { return _memory[0x0800]; }
 
         void loadRom(const uint8_t* buff, size_t size) {
             memcpy(_memory, buff, size);

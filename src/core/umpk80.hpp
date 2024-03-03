@@ -6,8 +6,6 @@
 #include "keyboard.hpp"
 #include "register.hpp"
 
-#include <cinttypes>
-
 #define UMPK80_OS_SIZE 0x800
 
 class RegisterControlStep : public BusDeviceWritable {

@@ -7,6 +7,8 @@
 #include <functional>
 #include <imgui.h>
 
+#include "../../controller.hpp"
+
 enum UiCpuControlRegister {
     B, C, 
     D, E, 
@@ -30,7 +32,7 @@ struct UiCpuControlEmits {
 
 class UiCpuControl : public IRenderable {
 public: 
-    UiCpuControl(UiCpuControlEmits emits) : m_emits(emits) {}
+    UiCpuControl(UiCpuControlEmits emits, Controller& controller) : m_emits(emits), m_controller(controller) {}
 
     void render() override {
         renderControls();
@@ -61,9 +63,12 @@ public:
 
 private:
     UiCpuControlEmits m_emits;
+    Controller& m_controller;
+
     uint16_t m_stackPointer = 0x0000;
     uint16_t m_programCounter = 0x0000;
     uint8_t m_cmd = 0x00;
+    
 
     uint8_t m_registers[8] = { 0 };
     bool m_flags[5] = { 0 };
@@ -147,12 +152,16 @@ private:
 
         ImGui::TableNextRow();
 
+        auto& cpu = m_controller.umpk().getCpu();
+
         ImGui::TableSetColumnIndex(0);
-        ImGui::Text("%04X", m_programCounter);
+        ImGui::Text("%04X", cpu.getProgramCounter());
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%04X", m_stackPointer);
+        ImGui::Text("%04X", cpu.getStackPointer());
         ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%02X", m_cmd);
+        std::string mnemonic =
+            Disassembler::getInstruction(cpu.getCommandRegister()).mnemonic;
+        ImGui::Text("%02X | %s", cpu.getCommandRegister(), mnemonic.c_str());
         
         ImGui::EndTable();
     }

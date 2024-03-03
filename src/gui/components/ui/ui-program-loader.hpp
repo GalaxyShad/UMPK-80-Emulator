@@ -12,7 +12,7 @@ class UiProgramLoader : public IRenderable {
 public:
     UiProgramLoader(Controller& controller) 
         : m_controller(controller) 
-        , m_raw(m_program)
+        , m_raw(m_program.data(), m_program.size())
         , m_decompiled(UiListingProps {m_listing, false, nullptr})
         , m_disassembler(m_program)
     {}
@@ -31,6 +31,7 @@ public:
                     m_errorMessage = "Program size length = 0 bytes " + std::string(pathFile);
 
                 makeLisitng();
+                m_raw.update(m_program.data(), m_program.size());
             } catch (std::runtime_error err) {
                 m_errorMessage = "Cannot open a file " + std::string(pathFile);
             }
@@ -79,6 +80,7 @@ public:
 private:
     Controller& m_controller;
     std::vector<uint8_t> m_program;
+
     std::string m_errorMessage;
     std::vector<UiListingLine> m_listing;
 

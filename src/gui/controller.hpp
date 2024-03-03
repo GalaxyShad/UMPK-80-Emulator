@@ -1,16 +1,11 @@
 #ifndef CONTROLLER_HPP
 #define CONTROLLER_HPP
 
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
 #include <mutex>
 #include <thread>
 #include <vector>
 
 #include <SFML/Audio.hpp>
-#include <cmath>
 
 // #define EMULATE_OLD_UMPK
 
@@ -55,8 +50,10 @@ public:
 
     void loadProgramToMemory(uint16_t position, std::vector<uint8_t> &program);
     
-    Umpk80 &getUmpk() { return _umpk; }
-    Disassembler &getDisasm() { return _disasm; }
+    Umpk80& umpk() { return _umpk; }
+
+    const uint8_t* getRam() { return &(_umpk.getBus().ramFirst()); }
+    const uint8_t* getRom() { return &(_umpk.getBus().romFirst()); }
 
 private:
     Umpk80 _umpk;

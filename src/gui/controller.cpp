@@ -1,4 +1,6 @@
 #include "controller.hpp"
+#include <fstream>
+#include <iomanip>
 
 void Controller::decompileToFile(std::string filename, uint16_t fromAdr,
                                  uint16_t len) {

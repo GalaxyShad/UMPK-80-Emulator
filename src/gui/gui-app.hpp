@@ -31,8 +31,8 @@ public:
 
         m_components.push_back(std::make_pair("Display", new UiDisplay(m_controller)));
 
-        m_components.push_back(std::make_pair("RAM", new UiMemoryDump(m_ram)));
-        m_components.push_back(std::make_pair("ROM", new UiMemoryDump(m_rom)));
+        m_components.push_back(std::make_pair("RAM", new UiMemoryDump( m_controller.getRam(), 0x1000 - 0x800, 0x800)));
+        m_components.push_back(std::make_pair("ROM", new UiMemoryDump(m_controller.getRom(), 0x800)));
 
         UiKeyboardEmits emits;
 
@@ -134,7 +134,7 @@ private:
             std::cout << reg << " " << value << "\n";
         };
 
-        return new UiCpuControl(cpuControlEmits);
+        return new UiCpuControl(cpuControlEmits, m_controller);
     }
 
     void _applyTheme() {

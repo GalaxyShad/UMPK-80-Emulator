@@ -10,18 +10,19 @@
 #include "components/ui/display/ui-display.hpp"
 #include "components/ui/ui-cmd-table.hpp"
 #include "components/ui/ui-cpu-control.hpp"
+#include "components/ui/ui-decompiler.hpp"
 #include "components/ui/ui-io-register.hpp"
 #include "components/ui/ui-keyboard.hpp"
 #include "components/ui/ui-listing.hpp"
 #include "components/ui/ui-memory-dump.hpp"
-#include "components/ui/ui-decompiler.hpp"
 #include "components/ui/ui-program-loader.hpp"
+
 
 #include "controller.hpp"
 
 class GuiApp {
 public:
-    GuiApp() : m_components(), m_controller(*this)  {
+    GuiApp() : m_components(), m_controller(*this) {
         m_window.create(sf::VideoMode(1280, 720), "UMPK-80 Emulator");
         ImGui::SFML::Init(m_window);
 
@@ -29,10 +30,18 @@ public:
         m_components.push_back(
             std::make_pair("CPU controls", makeCpuControl()));
 
-        m_components.push_back(std::make_pair("Display", new UiDisplay(m_controller)));
+        m_components.push_back(
+            std::make_pair("Display", new UiDisplay(m_controller)));
 
-        m_components.push_back(std::make_pair("RAM", new UiMemoryDump( m_controller.getRam(), 0x1000 - 0x800, 0x800)));
-        m_components.push_back(std::make_pair("ROM", new UiMemoryDump(m_controller.getRom(), 0x800)));
+        m_components.push_back(
+            std::make_pair("RAM", new UiMemoryDump(
+                                      0x1000 - 0x800,
+                                      [=](uint64_t index, uint8_t value) {
+                                          m_controller.setMemory(0x0800+index, value);
+                                      },
+                                      0x800)));
+        m_components.push_back(std::make_pair(
+            "ROM", new UiMemoryDump(m_controller.getRom(), 0x800)));
 
         UiKeyboardEmits emits;
 
@@ -40,8 +49,9 @@ public:
             std::cout << key << std::endl;
         };
 
-        m_components.push_back(std::make_pair(
-            "Keyboard", new UiKeyboard(UiKeyboardProps(), emits, m_controller)));
+        m_components.push_back(
+            std::make_pair("Keyboard", new UiKeyboard(UiKeyboardProps(), emits,
+                                                      m_controller)));
 
         UiListingProps listingProps = {m_listing, false, nullptr};
 
@@ -54,12 +64,15 @@ public:
             std::make_pair("Listing", new UiListingDecompiler(m_controller)));
 
         m_components.push_back(std::make_pair(
-            "IO", new UiIoRegister(m_controller, UiIoRegisterEmits{
-                      [](uint8_t val) { std::cout << val << std::endl; }})));
+            "IO",
+            new UiIoRegister(m_controller, UiIoRegisterEmits{[](uint8_t val) {
+                                 std::cout << val << std::endl;
+                             }})));
 
         m_components.push_back(std::make_pair("Decompile", new UiDecompiler()));
 
-        m_components.push_back(std::make_pair("Program Loader", new UiProgramLoader(m_controller)));
+        m_components.push_back(std::make_pair(
+            "Program Loader", new UiProgramLoader(m_controller)));
     }
 
     void start() {
@@ -74,7 +87,7 @@ public:
 private:
     std::vector<UiListingLine> m_listing = std::vector<UiListingLine>();
 
-    std::vector<std::pair<const char *, IRenderable *>> m_components;
+    std::vector<std::pair<std::string, IRenderable *>> m_components;
     std::vector<uint8_t> m_ram;
     std::vector<uint8_t> m_rom;
 
@@ -91,7 +104,13 @@ private:
 #endif // DEBUG
 
         for (auto i : m_components) {
-            ImGui::Begin(i.first);
+            ImGui::Begin(i.first.c_str());
+            if (i.first == "RAM") {
+                auto ram = (UiMemoryDump *)i.second;
+
+                if (m_controller.isUmpkRunning())
+                    ram->update(m_controller.getRam(), 0x1000 - 0x800);
+            }
             i.second->render();
             ImGui::End();
         }

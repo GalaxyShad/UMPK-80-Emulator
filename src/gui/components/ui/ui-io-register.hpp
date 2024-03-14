@@ -22,7 +22,7 @@ public:
 
     void render() override {
         for (uint8_t i = 0x80, c = 7; i != 0; i >>= 1, c--) {
-            ImGui::RadioButton(("o" + std::to_string(c)).c_str(),
+            ImGui::RadioButton(("##o" + std::to_string(c)).c_str(),
                                m_controller.port5Out() & i);
             ImGui::SameLine();
         }
@@ -31,7 +31,7 @@ public:
         ImGui::Separator();
 
         for (int i = 0; i < 8; i++) {
-            if (ImGui::Checkbox(("i" + std::to_string(7 - i)).c_str(),
+            if (ImGui::Checkbox(("##i" + std::to_string(7 - i)).c_str(),
                                 &vecIn[i])) {
                 m_emits.emitInRegisterChange(vecToUint8(vecIn));
             }

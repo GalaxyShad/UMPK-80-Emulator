@@ -71,9 +71,27 @@ void Controller::port5In(uint8_t data) {
     _umpkMutex.unlock();
 }
 
-void Controller::onSetProgramCounter(uint16_t value) {
+void Controller::setCpuFlags(CpuFlagsMapping flags) {
+    _umpkMutex.lock();
+    _umpk.getCpu().setFlags(flags);
+    _umpkMutex.unlock();
+}
+
+void Controller::setCpuProgramCounter(uint16_t value) {
     _umpkMutex.lock();
     _umpk.getCpu().setProgramCounter(value);
+    _umpkMutex.unlock();
+}
+
+void Controller::setCpuStackPointer(uint16_t sp) {
+    _umpkMutex.lock();
+    _umpk.getCpu().setStackPointer(sp);
+    _umpkMutex.unlock();
+}
+
+void Controller::setMemory(uint16_t index, uint8_t data) {
+    _umpkMutex.lock();
+    _umpk.getBus().memoryWrite(index, data);
     _umpkMutex.unlock();
 }
 

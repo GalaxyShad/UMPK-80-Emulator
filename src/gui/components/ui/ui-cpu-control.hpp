@@ -98,11 +98,11 @@ private:
         if (!ImGui::BeginTable("Registers", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
             return;
 
-        const char* registers[] = {
+        const char* registerLabels[] = {
             "B", "C", "D", "E", "H", "L", "M", "A"
         };
 
-        for (auto r : registers) {
+        for (auto r : registerLabels) {
             ImGui::TableSetupColumn(r);
         }
         ImGui::TableHeadersRow();
@@ -122,8 +122,9 @@ private:
             if (m_controller.isUmpkRunning()) {
                 ImGui::Text("%02X", m_registers[c]);
             } else {
+                ImGui::BeginDisabled(c == 6);
                 if (ImGui::InputScalar(
-                    registers[c],     
+                    registerLabels[c],     
                     ImGuiDataType_U8, &m_registers[c],
                     NULL, NULL, 
                     "%02X"
@@ -131,6 +132,7 @@ private:
                     m_controller.setRegister((Cpu::Register)c, m_registers[c]);
                     m_emits.onRegisterChange((UiCpuControlRegister)c, m_registers[c]);
                 }
+                ImGui::EndDisabled();
             }
         }
 
@@ -153,18 +155,30 @@ private:
         auto& cpu = m_controller.umpk().getCpu();
         auto flags = cpu.getFlags();
 
-        if (m_controller.isUmpkRunning()) {
-            uint8_t values[5] = { flags.carry, flags.sign, flags.zero, flags.auxcarry, flags.parry };
+        // TODO Refactor me 
+        m_flags[0] = flags.carry;
+        m_flags[1] = flags.sign;
+        m_flags[2] = flags.zero;
+        m_flags[3] = flags.auxcarry;
+        m_flags[4] = flags.parry;
 
+        if (m_controller.isUmpkRunning()) {
             for (int i = 0; i < 5; i++) {
                 ImGui::TableSetColumnIndex(i);
-                ImGui::Text("%s", values[i] ? "ACTIVE" : "-");
+                ImGui::Text("%s", m_flags[i] ? "ACTIVE" : "-");
             }        
         } else {
              for (int i = 0; i < 5; i++) {
                 ImGui::TableSetColumnIndex(i);
-                if (ImGui::Checkbox(std::to_string(i).c_str(), &m_flags[i])) {
-                    m_emits.onFlagChange((UiCpuControlFlags)i, m_flags[i]);
+                ImGui::PushItemWidth(-1);
+                if (ImGui::Checkbox("", &m_flags[i])) {
+                    flags.carry = m_flags[0];
+                    flags.sign = m_flags[1];
+                    flags.zero = m_flags[2];
+                    flags.auxcarry = m_flags[3];
+                    flags.parry = m_flags[4];
+
+                    cpu.setFlags(flags);
                 }
             }      
         }
@@ -185,10 +199,36 @@ private:
 
         auto& cpu = m_controller.umpk().getCpu();
 
+        m_programCounter = cpu.getProgramCounter();
+
         ImGui::TableSetColumnIndex(0);
-        ImGui::Text("%04X", cpu.getProgramCounter());
+        if (m_controller.isUmpkRunning()) {
+            ImGui::Text("%04X", m_programCounter);
+        } else {
+            ImGui::PushItemWidth(-1);
+            if (ImGui::InputScalar(
+                "PC",     
+                ImGuiDataType_U16, &m_programCounter,
+                NULL, NULL, 
+                "%04X"
+            )) {
+                m_controller.setCpuProgramCounter(m_programCounter);
+            }
+        }
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%04X", cpu.getStackPointer());
+        if (m_controller.isUmpkRunning()) {
+            ImGui::Text("%04X", m_stackPointer);
+        } else {
+            ImGui::PushItemWidth(-1);
+            if (ImGui::InputScalar(
+                "SP",     
+                ImGuiDataType_U16, &m_stackPointer,
+                NULL, NULL, 
+                "%04X"
+            )) {
+                m_controller.setCpuStackPointer(m_stackPointer);
+            }
+        }
         ImGui::TableSetColumnIndex(2);
         std::string mnemonic =
             Disassembler::getInstruction(cpu.getCommandRegister()).mnemonic;

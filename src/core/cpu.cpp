@@ -91,7 +91,7 @@ uint8_t Cpu::_portRead(uint8_t port) {
 
 
 // Register operations
-uint8_t Cpu::_getRegData(uint8_t regCode) {
+uint8_t Cpu::_getRegData(uint8_t regCode) const {
     if (regCode == 0b110) {
         return _bus.memoryRead(((uint16_t)_regH << 8) | _regL);
     }

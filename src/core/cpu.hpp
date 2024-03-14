@@ -25,14 +25,19 @@ public:
 
     void    tick();
     void    reset();
-    bool    isHold() { return _hold; };
-    void    setProgramCounter(uint16_t adr) { _prgCounter = adr; };
+    bool    isHold() const { return _hold; };
 
-    uint8_t  getCommandRegister()   { return _regCmd;       }
-    uint16_t getAdressRegister()    { return _regAdr;       }
-    uint16_t getStackPointer()      { return _stackPointer; }
-    uint16_t getProgramCounter()    { return _prgCounter;   }
-    CpuFlagsMapping getFlags()      { return _regFlag;      }
+    uint8_t  getCommandRegister() const   { return _regCmd;       }
+    uint16_t getAdressRegister()  const   { return _regAdr;       }
+
+    uint16_t getStackPointer() const         { return _stackPointer; }
+    void     setStackPointer(uint16_t sp)    { _stackPointer = sp;   }
+    
+    uint16_t getProgramCounter() const       { return _prgCounter; }
+    void     setProgramCounter(uint16_t adr) { _prgCounter = adr;  };
+
+    CpuFlagsMapping getFlags() const                { return _regFlag;  }
+    void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
 
     enum Register {
         B, C,
@@ -41,7 +46,7 @@ public:
         M, A
     };
 
-    uint8_t getRegister(Register reg)               { return _getRegData((uint8_t)reg); }
+    uint8_t getRegister(Register reg) const         { return _getRegData((uint8_t)reg); }
     void    setRegister(Register reg, uint8_t data) { return _setRegData(reg, data); }
 
     void interruptRst(int rstNum) {
@@ -118,7 +123,7 @@ private:
 
 
     // Register operations
-    uint8_t     _getRegData(uint8_t regCode);
+    uint8_t     _getRegData(uint8_t regCode) const;
     void        _setRegData(uint8_t regCode, uint8_t data);
 
     uint16_t    _getRegPairData(uint8_t regPairCode);

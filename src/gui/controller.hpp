@@ -44,7 +44,11 @@ public:
     uint8_t port5Out() { return _umpk.port5OutGet(); }
     void port5In(uint8_t data);
 
-    void onSetProgramCounter(uint16_t value);
+    void setCpuFlags(CpuFlagsMapping flags);
+    void setCpuProgramCounter(uint16_t value);
+    void setCpuStackPointer(uint16_t sp);
+
+    void setMemory(uint16_t index, uint8_t data);
     
     uint8_t getRegister(Cpu::Register reg) { return _umpk.getCpu().getRegister(reg); }
     void setRegister(Cpu::Register reg, uint8_t value) {

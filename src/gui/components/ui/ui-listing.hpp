@@ -20,8 +20,8 @@ struct UiListingLine {
 
 struct UiListingProps {
     std::vector<UiListingLine> &listing;
-    bool enableScroll = false;
-    int *cursorPos = nullptr;
+    bool enableScroll;
+    int *cursorPos;
 };
 
 class UiListing : public IRenderable {

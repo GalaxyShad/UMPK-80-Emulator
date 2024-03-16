@@ -40,6 +40,8 @@ public:
     void onBtnReset();
 
     void setUmpkKey(KeyboardKey key, bool value);
+    bool getUmpkKeyState(KeyboardKey key) { return _umpk.getKeyState(key); }
+
     bool isUmpkRunning() { return !_isUmpkFreezed; }
 
     uint8_t getDisplayDigit(int digit) { return _umpk.getDisplayDigit(digit); }

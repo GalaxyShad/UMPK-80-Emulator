@@ -77,6 +77,8 @@ public:
         }
     }
 
+    bool getKeyState(KeyboardKey key) { return _keyboard.isKeyPressed(key); }
+
     uint8_t getDisplayDigit(int digit) { return _display.get(digit); }
 
     void loadOS(const uint8_t *os) { _bus.loadRom(os, UMPK80_OS_SIZE); }

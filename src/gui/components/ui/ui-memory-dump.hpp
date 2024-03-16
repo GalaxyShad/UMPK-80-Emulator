@@ -7,8 +7,6 @@
 #include <functional>
 #include <imgui.h>
 #include <string>
-#include <vector>
-
 
 #include "../irenderable.hpp"
 
@@ -60,7 +58,7 @@ public:
                     ("0" + std::string(1, "0123456789ABCDEF"[column])).c_str());
             ImGui::TableHeadersRow();
 
-            for (int row = 0; row < m_arrSize / 16; row++) {
+            for (int row = 0; row < m_arrSize / 16 + 1; row++) {
                 ImGui::TableNextRow();
 
                 ImGui::TableSetColumnIndex(0);
@@ -71,7 +69,7 @@ public:
 
                 ImGui::Text("%04X", m_startLabel + (row << 4));
 
-                for (int column = 0; column < 16; column++) {
+                for (int column = 0; column < ((m_arrSize < 16) ? m_arrSize : 16); column++) {
                     ImGui::TableSetColumnIndex(column + 1);
 
                     // ImGui::Selectable()

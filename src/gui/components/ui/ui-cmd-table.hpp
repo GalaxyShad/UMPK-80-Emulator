@@ -49,7 +49,7 @@ public:
                                         
                 auto instr = Disassembler::getInstruction(row * 16 + column);
                 
-                ImGui::Selectable((instr.mnemonic + " " + instr.operand).c_str());
+                ImGui::Selectable((std::string(instr.mnemonic) + " " + std::string(instr.operand)).c_str());
                 ImGui::SetItemTooltip("%02X", (row << 4) | column);
             }
         }

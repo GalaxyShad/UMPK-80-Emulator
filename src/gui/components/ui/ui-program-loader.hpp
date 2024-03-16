@@ -18,7 +18,7 @@ public:
     {}
 
     void render() override {
-        static char pathFile[255] = {0};
+        static char pathFile[255] = "main.i8080asm.bin";
         ImGui::PushItemWidth(200);
         ImGui::InputText("File path", pathFile, 255);
         ImGui::SameLine();

@@ -29,7 +29,7 @@ public:
     UiListing(UiListingProps props) : m_props(props) {}
 
     void render() override {
-        ImGui::BeginChild(ImGui::GetID((void *)(intptr_t)0), ImVec2(-1, -1),
+        ImGui::BeginChild("##listing", ImVec2(-1, -1),
                           true);
 
         for (int row = 0; row < m_props.listing.size(); row++) {
@@ -38,11 +38,12 @@ public:
                              ? ImVec4(1, 1, 0, 1)
                              : ImVec4(1, 1, 1, 1);
 
-
-            ImGui::TextColored(color, "%04X | %s | %s",
-                                listingRow.address, vectorToHex(listingRow.bytes).c_str(),
-                                // listingRow.bytes,
-                                listingRow.instruction.c_str());
+            ImGui::TextColored(
+                color, "%04X | %02X | %s", 
+                
+                listingRow.address,
+                listingRow.bytes[0],
+                listingRow.instruction.c_str());
 
             if (m_props.enableScroll && m_props.cursorPos != nullptr &&
                 prevCursorPos != (*m_props.cursorPos) &&
@@ -86,24 +87,25 @@ class UiListingDecompiler : public IRenderable {
 public:
     UiListingDecompiler(Controller &controller)
         : m_clisting(UiListingProps{m_listing, true, &m_cursorpos}),
-          m_controller(controller) {}
+          m_controller(controller), m_disasm(m_controller.getRom(), 0x800)
 
-    void render() override {
-        m_listing.clear();
+    {
+        m_disasm.reset();
 
-        m_cursorpos = m_controller.umpk().getCpu().getProgramCounter();
-
-        disasm.reset();
         Disassembler::Result dis;
-
-        while ((dis = disasm.translate()).bytesCount != 0) {
+        while ((dis = m_disasm.translate()).bytesCount != 0) {
             for (int i = 0; i < dis.bytesCount; i++) {
                 std::vector<uint8_t> bytes;
                 bytes.push_back(dis.bytes[i]);
                 m_listing.push_back(
-                    UiListingLine{(uint16_t)(dis.address+i), bytes, i == 0 ? dis.instruction : "-"});
+                    UiListingLine{(uint16_t)(dis.address + i), bytes,
+                                  i == 0 ? dis.instruction : "-"});
             }
         }
+    }
+
+    void render() override {
+        m_cursorpos = m_controller.umpk().getCpu().getProgramCounter();
 
         m_clisting.render();
     }
@@ -113,7 +115,7 @@ private:
     std::vector<UiListingLine> m_listing;
     UiListing m_clisting;
     Controller &m_controller;
-    Disassembler disasm = Disassembler(m_controller.getRom(), 0x800);
+    Disassembler m_disasm;
 };
 
 #endif // UI_LISTING_HPP

@@ -105,12 +105,12 @@ private:
 
         for (auto i : m_components) {
             ImGui::Begin(i.first.c_str());
-            if (i.first == "RAM") {
-                auto ram = (UiMemoryDump *)i.second;
+            // if (i.first == "RAM") {
+            //     auto ram = (UiMemoryDump *)i.second;
 
-                if (m_controller.isUmpkRunning())
-                    ram->update(m_controller.getRam(), 0x1000 - 0x800);
-            }
+            //     if (m_controller.isUmpkRunning())
+            //         ram->update(m_controller.getRam(), 0x1000 - 0x800);
+            // }
             i.second->render();
             ImGui::End();
         }

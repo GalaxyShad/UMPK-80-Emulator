@@ -7,9 +7,9 @@
 class Disassembler {
 public:
     struct Instruction {
-        std::string mnemonic;
+        const char* mnemonic;
         int length;
-        std::string operand;
+        const char* operand;
     };
 
     struct Result {

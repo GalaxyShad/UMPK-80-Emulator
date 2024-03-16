@@ -27,7 +27,7 @@ public:
         : _umpkThread(&Controller::_umpkWork, this),
           _disasm(nullptr, 0) {}
 
-    ~Controller() { _umpkThread.detach(); }
+    ~Controller() { _umpkMutex.lock(); _umpkThread.detach(); }
 
     void decompileToFile(std::string filename, uint16_t fromAdr, uint16_t len);
 

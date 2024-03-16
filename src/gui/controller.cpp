@@ -163,17 +163,10 @@ void Controller::_umpkWork() {
     while (true) {
         if (_isUmpkFreezed)
             continue;
-        _umpkMutex.lock();
 
-        try {
-            _umpk.tick();
-        } catch (const std::logic_error le) {
-            // view.errorMessageBox(std::string(le.what()));
-            _umpk.getCpu().interruptRst(7);
-        }
+        _umpk.tick();
 
         _handleHooks(_umpk.getCpu());
-        _umpkMutex.unlock();
     }
 }
 

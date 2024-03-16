@@ -12,8 +12,7 @@ class UiProgramLoader : public IRenderable {
 public:
     UiProgramLoader(Controller& controller) 
         : m_controller(controller) 
-        , m_raw(m_program.data(), m_program.size())
-        , m_decompiled(UiListingProps {m_listing, false, nullptr})
+        , m_uiRaw(m_program.data(), m_program.size())
         , m_disassembler(m_program.data(), m_program.size())
     {}
 
@@ -30,8 +29,9 @@ public:
                 if (m_program.size() == 0)
                     m_errorMessage = "Program size length = 0 bytes " + std::string(pathFile);
 
-                makeLisitng();
-                m_raw.update(m_program.data(), m_program.size());
+                m_uiRaw.update(m_program.data(), m_program.size());
+
+                m_uiMemoryDisassembler.disassemble(m_program.data(), m_program.size());
             } catch (std::runtime_error err) {
                 m_errorMessage = "Cannot open a file " + std::string(pathFile);
             }
@@ -48,13 +48,13 @@ public:
             if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
                 
                 if (ImGui::BeginTabItem("RAW")) {
-                    m_raw.render();
+                    m_uiRaw.render();
 
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Decompiled")) {
-                    m_decompiled.render();
+                    m_uiMemoryDisassembler.render();
 
                     ImGui::EndTabItem();
                 }
@@ -84,33 +84,9 @@ private:
     std::string m_errorMessage;
     std::vector<UiListingLine> m_listing;
 
-    UiMemoryDump m_raw;
-    UiListing m_decompiled;
+    UiMemoryDump m_uiRaw;
+    UiMemoryDisassembler m_uiMemoryDisassembler;
     Disassembler m_disassembler;
-
-private:
-
-    void makeLisitng() {
-        m_disassembler.reset();
-        m_listing.clear();
-
-        uint16_t prg = 0;
-        std::string instr;
-        while ((instr = m_disassembler.translateOld()) != "EOF") {
-            int bytesCount = m_disassembler.getPgCounter() - prg;
-            prg = m_disassembler.getPgCounter();
-
-            std::vector<uint8_t> bytes;
-            for (int i = 0; i < bytesCount; i++) {
-                int index = prg+i;
-
-                if (index < m_program.size())
-                    bytes.push_back(m_program[index]);
-            }
-
-            m_listing.push_back(UiListingLine {m_disassembler.getPgCounter(), bytes, instr});
-        }
-    }
 };
 
 #endif // UI_PROGRAM_LOADER_HPP

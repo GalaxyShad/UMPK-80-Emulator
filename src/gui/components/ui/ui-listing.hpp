@@ -3,9 +3,6 @@
 
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
-#include <iomanip>
-#include <ios>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,7 +11,7 @@
 
 struct UiListingLine {
     uint16_t address;
-    std::vector<uint8_t> bytes;
+    uint8_t byte;
     std::string instruction;
 };
 
@@ -29,6 +26,18 @@ public:
     UiListing(UiListingProps props) : m_props(props) {}
 
     void render() override {
+        // renderAsChild();
+        renderAsTable();
+    }
+
+
+
+private:
+    UiListingProps m_props;
+    int prevCursorPos = -1;
+
+private:
+    void renderAsChild() {
         ImGui::BeginChild("##listing", ImVec2(-1, -1),
                           true);
 
@@ -42,7 +51,7 @@ public:
                 color, "%04X | %02X | %s", 
                 
                 listingRow.address,
-                listingRow.bytes[0],
+                listingRow.byte,
                 listingRow.instruction.c_str());
 
             if (m_props.enableScroll && m_props.cursorPos != nullptr &&
@@ -56,66 +65,105 @@ public:
         ImGui::EndChild();
     }
 
-private:
-    UiListingProps m_props;
-    int prevCursorPos = -1;
+    void renderAsTable() {
+        if (ImGui::BeginTable("Dump", 3,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollX |
+                                  ImGuiTableFlags_ScrollY |
+                                  ImGuiTableFlags_SizingFixedFit)
+        ) {
+            ImGui::TableSetupColumn("ADR");
+            ImGui::TableSetupColumn("MC");
+            ImGui::TableSetupColumn("Mnemonic");
 
-private:
-    std::string vectorToHex(const std::vector<uint8_t> &data) {
-        std::stringstream ss;
-        ss << std::hex << std::setfill('0') << std::uppercase;
+            ImGui::TableHeadersRow();
 
-        ss << std::setw(2) << (int)data[0] << " ";
+            for (int row = 0; row < m_props.listing.size(); row++) {
+                auto listingRow = m_props.listing[row];
+                auto color = (m_props.cursorPos && ((*m_props.cursorPos) == row))
+                                ? ImVec4(1, 1, 0, 1)
+                                : ImVec4(1, 1, 1, 1);
 
-        if (data.size() > 1) {
-            ss << std::setw(2) << (int)data[1];
-        } else {
-            ss << "  ";
+                ImGui::TableNextRow();
+
+                ImGui::TableSetBgColor(
+                    ImGuiTableBgTarget_CellBg,
+                    ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]),
+                    0);
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(color, "%04X", listingRow.address);
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextColored(color, "%02X", listingRow.byte);
+
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(color, "%s", listingRow.instruction.c_str());
+
+                if (m_props.enableScroll && m_props.cursorPos != nullptr &&
+                    prevCursorPos != (*m_props.cursorPos) &&
+                    (*m_props.cursorPos) == row
+                ) {
+                    ImGui::SetScrollHereY(0.25f);
+                    prevCursorPos = (*m_props.cursorPos);
+                }
+            }
+
+            ImGui::EndTable();
         }
-
-        if (data.size() > 2) {
-            ss << std::setw(2) << (int)data[2];
-        } else {
-            ss << "  ";
-        }
-
-        return ss.str();
     }
 };
 
-class UiListingDecompiler : public IRenderable {
+class UiMemoryDisassembler : public IRenderable {
 public:
-    UiListingDecompiler(Controller &controller)
-        : m_clisting(UiListingProps{m_listing, true, &m_cursorpos}),
-          m_controller(controller), m_disasm(m_controller.getRom(), 0x800)
+    UiMemoryDisassembler(int* cursor = nullptr) 
+        : m_uiListing(UiListingProps{ m_listing, true, cursor })
+    {}
 
-    {
-        m_disasm.reset();
+    void render() override {
+        m_uiListing.render();
+    }
+
+    void disassemble(const uint8_t* memory, size_t size) {
+        Disassembler disasm(memory, size);
 
         Disassembler::Result dis;
-        while ((dis = m_disasm.translate()).bytesCount != 0) {
+        while ((dis = disasm.translate()).bytesCount != 0) {
             for (int i = 0; i < dis.bytesCount; i++) {
-                std::vector<uint8_t> bytes;
-                bytes.push_back(dis.bytes[i]);
                 m_listing.push_back(
-                    UiListingLine{(uint16_t)(dis.address + i), bytes,
-                                  i == 0 ? dis.instruction : "-"});
+                    UiListingLine {
+                        (uint16_t)(dis.address + i), 
+                        dis.bytes[i],
+                        i == 0 ? dis.instruction : "-"
+                    }
+                );
             }
         }
     }
 
+private:
+    std::vector<UiListingLine> m_listing;
+    UiListing                  m_uiListing;
+};
+
+class UiOsListing : public IRenderable {
+public:
+    UiOsListing(Controller &controller)
+        : m_controller(controller)
+        , m_uiDisassembler(&m_cursorpos)
+    {
+        m_uiDisassembler.disassemble(m_controller.getRom(), m_controller.UMPK_ROM_SIZE);
+    }
+
     void render() override {
         m_cursorpos = m_controller.umpk().getCpu().getProgramCounter();
-
-        m_clisting.render();
+        m_uiDisassembler.render();
     }
 
 private:
-    int m_cursorpos;
-    std::vector<UiListingLine> m_listing;
-    UiListing m_clisting;
-    Controller &m_controller;
-    Disassembler m_disasm;
+    int          m_cursorpos;
+    Controller&  m_controller;
+    UiMemoryDisassembler m_uiDisassembler;
 };
 
 #endif // UI_LISTING_HPP

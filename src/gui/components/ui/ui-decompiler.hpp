@@ -4,9 +4,12 @@
 #include <imgui.h>
 
 #include "../irenderable.hpp"
+#include "../../controller.hpp"
 
-class UiDecompiler : public IRenderable {
+class UiDecompilerWindow : public IRenderable {
 public:
+    UiDecompilerWindow(Controller& controller) : m_controller(controller) {}
+
     void render() override {
         static char decompileFileName[255] = {0};
         static uint16_t fromAdr = 0x0000;
@@ -24,8 +27,8 @@ public:
                           "%04x");
 
         if (ImGui::Button("Decompile")) {
-            // _dataContext.decompileToFile(std::string(decompileFileName),
-            //                              fromAdr, len);
+            m_controller.decompileToFile(std::string(decompileFileName),
+                                         fromAdr, len);
             ImGui::OpenPopup("Success");
         }
 
@@ -47,6 +50,7 @@ public:
     }
 
 private:
+    Controller& m_controller;
 };
 
 #endif // UI_DECOMPILER_HPP

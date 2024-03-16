@@ -31,16 +31,21 @@ public:
             for (int j = 0; j < M_KEYMAP_W; j++) {
                 const char* keyLabel = m_keyNamesMap[i][j].c_str();
                 
-                if (key(keyLabel)) {
-                    m_emits.emitKeyPress(keyLabel);
-                }
-
                 bool isEmpty = (i < 2 && j == 0);
 
-                if (!isEmpty)
-                    m_controller.setUmpkKey(m_keyMap[i][j], ImGui::IsItemActive());
+                if (!isEmpty) {
+                    if (key(keyLabel)) {
+                        m_emits.emitKeyPress(keyLabel);
+                    }
 
-                ImGui::SameLine();
+                    m_controller.setUmpkKey(m_keyMap[i][j], ImGui::IsItemActive());
+                
+                    ImGui::SameLine();
+                } else {
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
+                }
+
+
             }
             ImGui::NewLine();
         }

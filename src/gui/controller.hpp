@@ -23,11 +23,14 @@
 
 class Controller {
 public:
+    const uint16_t UMPK_ROM_SIZE = 0x800;  
+
+public:
     Controller(class GuiApp& gui)
         : _umpkThread(&Controller::_umpkWork, this),
           _disasm(nullptr, 0) {}
 
-    ~Controller() { _umpkMutex.lock(); _umpkThread.detach(); }
+    ~Controller() { _umpkMutex.lock(); _isUmpkFreezed = true;  _umpkThread.detach(); }
 
     void decompileToFile(std::string filename, uint16_t fromAdr, uint16_t len);
 

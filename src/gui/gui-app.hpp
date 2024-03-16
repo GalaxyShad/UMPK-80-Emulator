@@ -53,15 +53,8 @@ public:
             std::make_pair("Keyboard", new UiKeyboard(UiKeyboardProps(), emits,
                                                       m_controller)));
 
-        UiListingProps listingProps = {m_listing, false, nullptr};
-
-        listingProps.listing.push_back(
-            UiListingLine{0x8000, std::vector<uint8_t>(), "SomeInstr"});
-        listingProps.cursorPos = 0;
-        listingProps.enableScroll = false;
-
         m_components.push_back(
-            std::make_pair("Listing", new UiListingDecompiler(m_controller)));
+            std::make_pair("Listing", new UiOsListing(m_controller)));
 
         m_components.push_back(std::make_pair(
             "IO",
@@ -69,7 +62,7 @@ public:
                                  std::cout << val << std::endl;
                              }})));
 
-        m_components.push_back(std::make_pair("Decompile", new UiDecompiler()));
+        m_components.push_back(std::make_pair("Decompile", new UiDecompilerWindow(m_controller)));
 
         m_components.push_back(std::make_pair(
             "Program Loader", new UiProgramLoader(m_controller)));
@@ -105,12 +98,12 @@ private:
 
         for (auto i : m_components) {
             ImGui::Begin(i.first.c_str());
-            // if (i.first == "RAM") {
-            //     auto ram = (UiMemoryDump *)i.second;
+            if (i.first == "RAM") {
+                auto ram = (UiMemoryDump *)i.second;
 
-            //     if (m_controller.isUmpkRunning())
-            //         ram->update(m_controller.getRam(), 0x1000 - 0x800);
-            // }
+                if (m_controller.isUmpkRunning())
+                    ram->update(m_controller.getRam(), 0x1000 - 0x800);
+            }
             i.second->render();
             ImGui::End();
         }

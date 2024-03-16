@@ -72,7 +72,6 @@ public:
                 for (int column = 0; column < ((m_arrSize < 16) ? m_arrSize : 16); column++) {
                     ImGui::TableSetColumnIndex(column + 1);
 
-                    // ImGui::Selectable()
                     int index = row * 16 + column;
 
                     if (m_readonly) {

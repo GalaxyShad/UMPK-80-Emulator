@@ -41,11 +41,13 @@ private:
         ImGui::BeginChild("##listing", ImVec2(-1, -1),
                           true);
 
+        ImGuiStyle &style = ImGui::GetStyle();
+
         for (int row = 0; row < m_props.listing.size(); row++) {
             auto listingRow = m_props.listing[row];
             auto color = (m_props.cursorPos && ((*m_props.cursorPos) == row))
-                             ? ImVec4(1, 1, 0, 1)
-                             : ImVec4(1, 1, 1, 1);
+                             ? style.Colors[ImGuiCol_ButtonActive]
+                             : style.Colors[ImGuiCol_Text];
 
             ImGui::TextColored(
                 color, "%04X | %02X | %s", 
@@ -78,11 +80,13 @@ private:
 
             ImGui::TableHeadersRow();
 
+            ImGuiStyle &style = ImGui::GetStyle();
+
             for (int row = 0; row < m_props.listing.size(); row++) {
                 auto listingRow = m_props.listing[row];
                 auto color = (m_props.cursorPos && ((*m_props.cursorPos) == row))
-                                ? ImVec4(1, 1, 0, 1)
-                                : ImVec4(1, 1, 1, 1);
+                             ? style.Colors[ImGuiCol_ButtonHovered]
+                             : style.Colors[ImGuiCol_Text];
 
                 ImGui::TableNextRow();
 

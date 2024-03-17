@@ -26,6 +26,9 @@ public:
             ImGui::SameLine();
         }
 
+        ImGui::Text("= %02X", m_controller.port5Out());
+        ImGui::SameLine();
+
         ImGui::NewLine();
         ImGui::Separator();
 
@@ -38,7 +41,11 @@ public:
             ImGui::SameLine();
         }
 
-        m_controller.port5In(vecToUint8(vecIn));
+        uint8_t inData = vecToUint8(vecIn);
+
+        ImGui::Text("= %02X", inData);
+
+        m_controller.port5In(inData);
     }
 
     void setOut(uint8_t value) { uint8ToVec(value, vecOut); }

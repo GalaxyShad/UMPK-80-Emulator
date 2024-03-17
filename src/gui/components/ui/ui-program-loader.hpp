@@ -8,13 +8,16 @@
 #include "ui-listing.hpp"
 #include "../../../core/disassembler.hpp"
 
+#include "../../vendor/memory_editor/imgui_memory_editor/imgui_memory_editor.h"
+
 class UiProgramLoader : public IRenderable {
 public:
     UiProgramLoader(Controller& controller) 
         : m_controller(controller) 
-        , m_uiRaw(m_program.data(), m_program.size())
         , m_disassembler(m_program.data(), m_program.size())
-    {}
+    {
+        m_imGuiMemoryEditor.ReadOnly = true;
+    }   
 
     void render() override {
         static char pathFile[255] = "main.i8080asm.bin";
@@ -28,8 +31,6 @@ public:
 
                 if (m_program.size() == 0)
                     m_errorMessage = "Program size length = 0 bytes " + std::string(pathFile);
-
-                m_uiRaw.update(m_program.data(), m_program.size());
 
                 m_uiMemoryDisassembler.disassemble(m_program.data(), m_program.size());
             } catch (std::runtime_error err) {
@@ -48,7 +49,7 @@ public:
             if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
                 
                 if (ImGui::BeginTabItem("RAW")) {
-                    m_uiRaw.render();
+                    m_imGuiMemoryEditor.DrawContents(m_program.data(), m_program.size());
 
                     ImGui::EndTabItem();
                 }
@@ -84,8 +85,8 @@ private:
     std::string m_errorMessage;
     std::vector<UiListingLine> m_listing;
 
-    UiMemoryDump m_uiRaw;
     UiMemoryDisassembler m_uiMemoryDisassembler;
+    ImGuiMemoryEditor m_imGuiMemoryEditor;
     Disassembler m_disassembler;
 };
 

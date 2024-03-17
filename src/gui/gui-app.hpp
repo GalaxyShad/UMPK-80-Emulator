@@ -16,7 +16,7 @@
 #include "components/ui/ui-listing.hpp"
 #include "components/ui/ui-memory-dump.hpp"
 #include "components/ui/ui-program-loader.hpp"
-
+#include "components/ui/ui-rom.hpp"
 
 #include "controller.hpp"
 
@@ -32,16 +32,6 @@ public:
 
         m_components.push_back(
             std::make_pair("Display", new UiDisplay(m_controller)));
-
-        m_components.push_back(
-            std::make_pair("RAM", new UiMemoryDump(
-                                      0x1000 - 0x800,
-                                      [=](uint64_t index, uint8_t value) {
-                                          m_controller.setMemory(0x0800+index, value);
-                                      },
-                                      0x800)));
-        m_components.push_back(std::make_pair(
-            "ROM", new UiMemoryDump(m_controller.getRom(), 0x800)));
 
         UiKeyboardEmits emits;
 
@@ -64,12 +54,14 @@ public:
 
         m_components.push_back(std::make_pair("Decompile", new UiDecompilerWindow(m_controller)));
 
-        m_components.push_back(std::make_pair(
-            "Program Loader", new UiProgramLoader(m_controller)));
+        m_components.push_back(std::make_pair("Program Loader", new UiProgramLoader(m_controller)));
+
+        m_components.push_back(std::make_pair("Rom", new UiRom(m_controller)));
+        m_components.push_back(std::make_pair("Ram", new UiRam(m_controller)));
     }
 
     void start() {
-        // _applyTheme();
+        init();
 
         while (m_window.isOpen()) {
             handleEvents();
@@ -87,10 +79,22 @@ private:
     sf::RenderWindow m_window;
     sf::Clock m_deltaClock;
 
+    ImGuiMemoryEditor m_imGuiMemoryEditor;
+
     Controller m_controller;
+
+    void init() {
+        _applyTheme();
+
+        m_imGuiMemoryEditor.ReadOnly = true;
+    }
 
     void update() {
         ImGui::SFML::Update(m_window, m_deltaClock.restart());
+
+        ImGui::Begin("Editorororo");
+        m_imGuiMemoryEditor.DrawContents((void*)m_controller.getRom(), m_controller.UMPK_ROM_SIZE);
+        ImGui::End();
 
 #ifdef _DEBUG
         ImGui::ShowDemoWindow();

@@ -160,7 +160,7 @@ void Controller::_handleHooks(Cpu &cpu) {
 void Controller::_umpkWork() {
     _loadSystem();
 
-    while (true) {
+    while (_isUmpkWorking) {
         if (_isUmpkFreezed)
             continue;
 

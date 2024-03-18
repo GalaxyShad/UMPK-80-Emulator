@@ -20,6 +20,12 @@ public:
         }
     }
 
+    virtual ~UiDisplay() {
+        for (auto& i : m_digitList) {
+            delete i;
+        }
+    }
+
     void render() override {
 
         for (int d = 0; d < m_digitList.size(); d++) {
@@ -31,7 +37,7 @@ public:
         rt.display();
         
         ImGui::SetNextItemWidth(-100);
-        ImGui::Image(rt); 
+        // ImGui::Image(rt); 
     }
 private:
     std::vector<UiDisplayDigit*> m_digitList;

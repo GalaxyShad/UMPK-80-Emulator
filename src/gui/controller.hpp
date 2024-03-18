@@ -27,10 +27,13 @@ public:
 
 public:
     Controller(class GuiApp& gui)
-        : _umpkThread(&Controller::_umpkWork, this),
-          _disasm(nullptr, 0) {}
+        : //_umpkThread(&Controller::_umpkWork, this),
+          _disasm(nullptr, 0) 
+    {
+        
+    }
 
-    ~Controller() { _umpkMutex.lock(); _isUmpkFreezed = true;  _umpkThread.detach(); }
+    // ~Controller() { _umpkThread.detach(); }
 
     void decompileToFile(std::string filename, uint16_t fromAdr, uint16_t len);
 
@@ -80,6 +83,7 @@ private:
     std::mutex _umpkMutex;
 
     bool _isUmpkFreezed = true;
+    bool _isUmpkWorking = true;
 
 private:
     void _loadSystem();

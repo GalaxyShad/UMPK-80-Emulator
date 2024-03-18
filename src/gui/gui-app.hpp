@@ -14,7 +14,6 @@
 #include "components/ui/ui-io-register.hpp"
 #include "components/ui/ui-keyboard.hpp"
 #include "components/ui/ui-listing.hpp"
-#include "components/ui/ui-memory-dump.hpp"
 #include "components/ui/ui-program-loader.hpp"
 #include "components/ui/ui-rom.hpp"
 
@@ -52,12 +51,18 @@ public:
                                  std::cout << val << std::endl;
                              }})));
 
-        m_components.push_back(std::make_pair("Decompile", new UiDecompilerWindow(m_controller)));
+        m_components.push_back(std::make_pair("Disassembler", new UiDecompilerWindow(m_controller)));
 
         m_components.push_back(std::make_pair("Program Loader", new UiProgramLoader(m_controller)));
 
-        m_components.push_back(std::make_pair("Rom", new UiRom(m_controller)));
-        m_components.push_back(std::make_pair("Ram", new UiRam(m_controller)));
+        m_components.push_back(std::make_pair("ROM", new UiRom(m_controller)));
+        m_components.push_back(std::make_pair("RAM", new UiRam(m_controller)));
+    }
+
+    virtual ~GuiApp() {
+        for (auto& i : m_components) {
+            delete i.second;
+        }
     }
 
     void start() {
@@ -67,6 +72,8 @@ public:
             handleEvents();
             update();
         }
+
+        ImGui::SFML::Shutdown(m_window);
     }
 
 private:
@@ -79,22 +86,14 @@ private:
     sf::RenderWindow m_window;
     sf::Clock m_deltaClock;
 
-    ImGuiMemoryEditor m_imGuiMemoryEditor;
-
     Controller m_controller;
 
     void init() {
         _applyTheme();
-
-        m_imGuiMemoryEditor.ReadOnly = true;
     }
 
     void update() {
         ImGui::SFML::Update(m_window, m_deltaClock.restart());
-
-        ImGui::Begin("Editorororo");
-        m_imGuiMemoryEditor.DrawContents((void*)m_controller.getRom(), m_controller.UMPK_ROM_SIZE);
-        ImGui::End();
 
 #ifdef _DEBUG
         ImGui::ShowDemoWindow();
@@ -102,12 +101,6 @@ private:
 
         for (auto i : m_components) {
             ImGui::Begin(i.first.c_str());
-            if (i.first == "RAM") {
-                auto ram = (UiMemoryDump *)i.second;
-
-                if (m_controller.isUmpkRunning())
-                    ram->update(m_controller.getRam(), 0x1000 - 0x800);
-            }
             i.second->render();
             ImGui::End();
         }

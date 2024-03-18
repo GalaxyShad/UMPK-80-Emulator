@@ -6,13 +6,15 @@ void Controller::decompileToFile(std::string filename, uint16_t fromAdr,
                                  uint16_t len) {
     std::ofstream stream(filename);
 
-    _disasm.reset(fromAdr);
+    Disassembler dis(getRom() + fromAdr, len);
+
+    dis.reset(fromAdr);
 
     for (int i = 0; i < len; i++) {
-        std::vector<uint8_t> mc = _disasm.getBytes();
-        uint16_t adr = _disasm.getPgCounter();
+        std::vector<uint8_t> mc = dis.getBytes();
+        uint16_t adr = dis.getPgCounter();
 
-        std::string instr = _disasm.translateOld();
+        std::string instr = dis.translateOld();
 
         stream << std::hex << std::uppercase << std::setw(4)
                << std::setfill('0') << adr << " | ";

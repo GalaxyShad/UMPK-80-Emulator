@@ -37,7 +37,7 @@ public:
         rt.display();
         
         ImGui::SetNextItemWidth(-100);
-        // ImGui::Image(rt); 
+        ImGui::Image(rt); 
     }
 private:
     std::vector<UiDisplayDigit*> m_digitList;

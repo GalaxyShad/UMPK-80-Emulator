@@ -26,7 +26,7 @@ void Cpu::reset() {
 void Cpu::_readCommand(uint8_t opcode) {
     instructionFunction_t instruction = _instructions[opcode];
 
-    assert(instruction == nullptr);
+    assert(instruction != nullptr);
 
     _regCmd = opcode;
     _prgCounter++;

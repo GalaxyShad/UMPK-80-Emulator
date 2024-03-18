@@ -158,15 +158,19 @@ void Controller::_handleHooks(Cpu &cpu) {
 }
 
 void Controller::_umpkWork() {
+    _umpkMutex.lock();
     _loadSystem();
+    _umpkMutex.unlock();
 
     while (_isUmpkWorking) {
         if (_isUmpkFreezed)
             continue;
 
+        _umpkMutex.lock();
         _umpk.tick();
 
         _handleHooks(_umpk.getCpu());
+        _umpkMutex.unlock();
     }
 }
 

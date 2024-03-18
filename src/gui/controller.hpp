@@ -13,8 +13,6 @@
 #include "../core/dj.hpp"
 #include "../core/umpk80.hpp"
 
-
-
 #ifdef EMULATE_OLD_UMPK
 #define OS_FILE "./data/old.bin"
 #else
@@ -23,17 +21,18 @@
 
 class Controller {
 public:
-    const uint16_t UMPK_ROM_SIZE = 0x800;  
+    const uint16_t UMPK_ROM_SIZE = 0x800;
 
 public:
-    Controller(class GuiApp& gui)
-        : //_umpkThread(&Controller::_umpkWork, this),
-          _disasm(nullptr, 0) 
-    {
-        
-    }
+    Controller(class GuiApp &gui)
+        : _umpkThread(&Controller::_umpkWork, this), _disasm(nullptr, 0) {}
 
-    // ~Controller() { _umpkThread.detach(); }
+    ~Controller() {
+        _umpkMutex.lock();
+        _isUmpkWorking = false;
+        _umpkMutex.unlock();
+        _umpkThread.join();
+    }
 
     void decompileToFile(std::string filename, uint16_t fromAdr, uint16_t len);
 
@@ -57,8 +56,10 @@ public:
     void setCpuStackPointer(uint16_t sp);
 
     void setMemory(uint16_t index, uint8_t data);
-    
-    uint8_t getRegister(Cpu::Register reg) { return _umpk.getCpu().getRegister(reg); }
+
+    uint8_t getRegister(Cpu::Register reg) {
+        return _umpk.getCpu().getRegister(reg);
+    }
     void setRegister(Cpu::Register reg, uint8_t value) {
         _umpkMutex.lock();
         _umpk.getCpu().setRegister(reg, value);
@@ -68,11 +69,11 @@ public:
     std::vector<uint8_t> readBinaryFile(std::string path);
 
     void loadProgramToMemory(uint16_t position, std::vector<uint8_t> &program);
-    
-    Umpk80& umpk() { return _umpk; }
 
-    const uint8_t* getRam() { return &(_umpk.getBus().ramFirst()); }
-    const uint8_t* getRom() { return &(_umpk.getBus().romFirst()); }
+    Umpk80 &umpk() { return _umpk; }
+
+    const uint8_t *getRam() { return &(_umpk.getBus().ramFirst()); }
+    const uint8_t *getRom() { return &(_umpk.getBus().romFirst()); }
 
 private:
     Umpk80 _umpk;

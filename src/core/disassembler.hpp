@@ -21,7 +21,7 @@ public:
 
 
     static Instruction getInstruction(uint8_t opcode) {
-    // clang-format off
+        // clang-format off
         static const Instruction instructions[256] = {
             // 0x00                 0x01                   0x02                   0x03                        0x04                       0x05                    0x06                   0x07                0x08                    0x09                    0x0A                    0x0B                        0x0C                       0x0D                            0x0E                       0x0F            //     
 /* 0X00 */  {"NOP",         1, ""}, {"LXI B,",  3, "D16"}, {"STAX B",  1, ""},    {"INX B",   1, ""},         {"INR B",   1, ""},        {"DCR B",       1, ""}, {"MVI B",   2, ""},    {"RLC",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD B",       1, ""}, {"LDAX B",  1, ""},     {"DCX B",       1, ""},     {"INR C",   1, ""},        {"DCR C",        1, ""},        {"MVI C",   2, ""},       {"RRC",     1, ""}, // 0X00

@@ -26,10 +26,7 @@ void Cpu::reset() {
 void Cpu::_readCommand(uint8_t opcode) {
     instructionFunction_t instruction = _instructions[opcode];
 
-    if (instruction == nullptr) {
-        printf("%04x: %02x\n", _prgCounter, opcode);
-        throw std::logic_error("Unexisting command");
-    }
+    assert(instruction == nullptr);
 
     _regCmd = opcode;
     _prgCounter++;

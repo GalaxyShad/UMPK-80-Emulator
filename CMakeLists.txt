@@ -33,6 +33,12 @@ add_executable(umpk-80-emu-ui ${SOURCES})
 target_link_libraries(umpk-80-emu-ui PRIVATE sfml-audio sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)
 
+target_compile_definitions(umpk-80-emu-ui
+    PRIVATE
+        # If the debug configuration pass the DEBUG define to the compiler 
+        $<$<CONFIG:Debug>:DEBUG>
+)
+
 if(WIN32)
     add_custom_command(
         TARGET umpk-80-emu-ui

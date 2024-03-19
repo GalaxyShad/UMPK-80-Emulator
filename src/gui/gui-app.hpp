@@ -124,7 +124,7 @@ private:
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
         }
         
-#ifdef _DEBUG
+#ifdef DEBUG
         ImGui::ShowDemoWindow();
         ImGui::ShowMetricsWindow();
 #endif // DEBUG

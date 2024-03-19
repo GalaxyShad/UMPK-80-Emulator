@@ -20,6 +20,8 @@ public:
         : m_emits(emits), m_controller(controller) {}
 
     void render() override {
+        ImGui::Text("P%02X Out", m_controller.umpk().PORT_IO);
+
         for (uint8_t i = 0x80, c = 7; i != 0; i >>= 1, c--) {
             ImGui::RadioButton(("##o" + std::to_string(c)).c_str(),
                                m_controller.port5Out() & i);
@@ -31,6 +33,8 @@ public:
 
         ImGui::NewLine();
         ImGui::Separator();
+
+        ImGui::Text("P%02x In", m_controller.umpk().PORT_IO);
 
         for (int i = 0; i < 8; i++) {
             if (ImGui::Checkbox(("##i" + std::to_string(7 - i)).c_str(),

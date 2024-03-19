@@ -26,13 +26,13 @@ public:
 
     uint8_t busPortRead() override { return scan(_scan.busPortRead()); }
 
-    void keySetState(KeyboardKey key, bool state) { _keys[(int)key] = state; }
+    void setKeyState(KeyboardKey key, bool state) { _keys[(int)key] = state; }
 
     bool isKeyPressed(KeyboardKey key) { return _keys[(int)key]; }
     bool isKeyReleased(KeyboardKey key) { return !_keys[(int)key]; }
 
-    void keyPress(KeyboardKey key) { keySetState(key, true); }
-    void keyRelease(KeyboardKey key) { keySetState(key, false); }
+    void keyPress(KeyboardKey key) { setKeyState(key, true); }
+    void keyRelease(KeyboardKey key) { setKeyState(key, false); }
 
     uint8_t scan(uint8_t scanValue) {
 

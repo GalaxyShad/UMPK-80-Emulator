@@ -65,15 +65,12 @@ public:
 
     void releaseKey(KeyboardKey key) {
         switch (key) {
-        case KeyboardKey::ST:
-            return;
-            break;
-        case KeyboardKey::R:
-            return;
-            break;
-        default:
-            _keyboard.keyRelease(key);
-            break;
+            case KeyboardKey::ST:
+            case KeyboardKey::R:
+                return;
+            default:
+                _keyboard.keyRelease(key);
+                break;
         }
     }
 
@@ -99,7 +96,7 @@ private:
 
     RegisterControlStep _registerStepExec;
 
-private:
+public:
 #ifdef EMULATE_OLD_UMPK
     const uint8_t PORT_SPEAKER = 0x04;
     const uint8_t PORT_IO = 0x05;

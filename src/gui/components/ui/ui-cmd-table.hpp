@@ -21,7 +21,7 @@ public:
             ImGuiTableFlags_RowBg   | 
             ImGuiTableFlags_ScrollX | 
             ImGuiTableFlags_ScrollY |
-            ImGuiTableFlags_SizingFixedSame
+            ImGuiTableFlags_SizingFixedFit
         )) return;
 
         ImGui::TableSetupScrollFreeze(1, 1);

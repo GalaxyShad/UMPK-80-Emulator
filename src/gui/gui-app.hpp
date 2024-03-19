@@ -123,10 +123,7 @@ private:
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
         }
-
         
-
-        // ImGui::DockSpace(ImGui::GetID("Workspace"));
 #ifdef _DEBUG
         ImGui::ShowDemoWindow();
         ImGui::ShowMetricsWindow();

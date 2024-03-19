@@ -171,7 +171,7 @@ private:
              for (int i = 0; i < 5; i++) {
                 ImGui::TableSetColumnIndex(i);
                 ImGui::PushItemWidth(-1);
-                if (ImGui::Checkbox("", &m_flags[i])) {
+                if (ImGui::Checkbox(("##" + std::to_string(i)).c_str(), &m_flags[i])) {
                     flags.carry = m_flags[0];
                     flags.sign = m_flags[1];
                     flags.zero = m_flags[2];

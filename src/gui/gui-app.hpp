@@ -25,6 +25,10 @@ public:
         m_window.create(sf::VideoMode(1280, 720), "UMPK-80 Emulator");
         ImGui::SFML::Init(m_window);
 
+        auto& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
         m_components.push_back(std::make_pair("CMD Table", new UiCmdTable()));
         m_components.push_back(
             std::make_pair("CPU controls", makeCpuControl()));
@@ -89,14 +93,43 @@ private:
     Controller m_controller;
 
     void init() {
-        _applyTheme();
+        // _applyTheme();
     }
 
     void update() {
         ImGui::SFML::Update(m_window, m_deltaClock.restart());
 
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGuiWindowFlags window_flags =
+            ImGuiWindowFlags_NoDocking |
+            ImGuiWindowFlags_NoTitleBar | 
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoResize | 
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoNavFocus;
+
+        ImGui::Begin("DockSpace Demo", NULL, window_flags);
+        ImGui::PopStyleVar(2);
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+        {
+            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+        }
+
+        
+
+        // ImGui::DockSpace(ImGui::GetID("Workspace"));
 #ifdef _DEBUG
         ImGui::ShowDemoWindow();
+        ImGui::ShowMetricsWindow();
 #endif // DEBUG
 
         for (auto i : m_components) {
@@ -104,6 +137,8 @@ private:
             i.second->render();
             ImGui::End();
         }
+        
+        ImGui::End();
 
         m_window.clear();
         ImGui::SFML::Render(m_window);

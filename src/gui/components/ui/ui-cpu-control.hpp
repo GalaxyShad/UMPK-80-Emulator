@@ -45,19 +45,18 @@ private:
     uint8_t m_registers[8] = { 0 };
     bool m_flags[5] = { 0 };
 
-    const char* m_controlButtons[5] = {
-        "Start", "CMD+", "CMD++", "Stop", "Reset"
+    const char* m_controlButtons[4] = {
+        "Start", "Step", "Stop", "Reset"
     };
 
     void renderControls() {
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < (sizeof(m_controlButtons) / sizeof(m_controlButtons[0])); i++) {
             if (ImGui::Button(m_controlButtons[i])) {
                 switch (i) {
                     case 0: m_controller.onBtnStart(); break;
                     case 1: m_controller.onBtnNextCommand(); break;
-                    case 2:  break;
-                    case 3: m_controller.onButtonStop(); break;
-                    case 4: m_controller.onBtnReset(); break;
+                    case 2: m_controller.onButtonStop(); break;
+                    case 3: m_controller.onBtnReset(); break;
                 }
             }
             

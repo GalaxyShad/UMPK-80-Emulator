@@ -173,6 +173,9 @@ void Controller::_umpkWork() {
 
         _handleHooks(_umpk.getCpu());
         _umpkMutex.unlock();
+
+        if (breakpoint == _umpk.getCpu().getProgramCounter())
+            _isUmpkFreezed = true;
     }
 }
 

@@ -5,8 +5,6 @@
 #include <cstdio>
 #include <fstream>
 #include <imgui.h>
-#include <ios>
-#include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -20,26 +18,26 @@ struct UiListingLine {
     std::string instruction;
 };
 
-struct UiListingProps {
-    std::vector<UiListingLine> &listing;
-    bool enableScroll;
-    int *cursorPos;
-};
-
 class UiListing : public IRenderable {
 public:
-    UiListing(UiListingProps props) : m_props(props) {}
+    UiListing(std::vector<UiListingLine>& listing, bool enableScroll = false, int* cursorPos = nullptr, int* breakpoint = nullptr ) 
+        : m_listing(listing)
+        , m_enableScroll(enableScroll)
+        , m_cursorPos(cursorPos)
+        , m_breakPoint(breakpoint)
+    {}
 
     void render() override {
         renderAsTable();
     }
     
     void exportToStream(std::ostream& stream) {
-        for (int row = 0; row < m_props.listing.size(); row++) {
-            auto listingRow = m_props.listing[row];
+        for (int row = 0; row < m_listing.size(); row++) {
+            auto listingRow = m_listing[row];
 
             char str[255];
-            std::snprintf(str, 255, "%04X | %02X | %s", listingRow.address,
+            std::snprintf(str, 255, "%04X | %02X | %s", 
+                listingRow.address,
                 listingRow.byte,
                 listingRow.instruction.c_str());
 
@@ -48,17 +46,23 @@ public:
     }
 
 private:
-    UiListingProps m_props;
+    std::vector<UiListingLine>& m_listing;
+    bool m_enableScroll;
+    int* m_cursorPos;
+    int* m_breakPoint;
+
     char m_exportFileNameBuffer[255] = "disassembled.txt";
     int prevCursorPos = -1;
 
+private:
     void renderAsTable() {
-        if (ImGui::BeginTable("Dump", 3,
+        if (ImGui::BeginTable("Dump", 4,
                               ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
                                   ImGuiTableFlags_ScrollX |
                                   ImGuiTableFlags_ScrollY |
                                   ImGuiTableFlags_SizingFixedFit)
         ) {
+            ImGui::TableSetupColumn("");
             ImGui::TableSetupColumn("ADR");
             ImGui::TableSetupColumn("MC");
             ImGui::TableSetupColumn("Mnemonic");
@@ -67,9 +71,9 @@ private:
 
             ImGuiStyle &style = ImGui::GetStyle();
 
-            for (int row = 0; row < m_props.listing.size(); row++) {
-                auto listingRow = m_props.listing[row];
-                auto color = (m_props.cursorPos && ((*m_props.cursorPos) == row))
+            for (int row = 0; row < m_listing.size(); row++) {
+                auto listingRow = m_listing[row];
+                auto color = (m_cursorPos && ((*m_cursorPos) == row))
                              ? style.Colors[ImGuiCol_ButtonHovered]
                              : style.Colors[ImGuiCol_Text];
 
@@ -80,21 +84,28 @@ private:
                     ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]),
                     0);
 
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(color, "%04X", listingRow.address);
+                if (m_breakPoint != nullptr) {
+                    ImGui::TableSetColumnIndex(0);
+                    if (ImGui::Selectable(("##rb" + std::to_string(row)).c_str(), *m_breakPoint == row)) {
+                        *m_breakPoint = (*m_breakPoint != row) ? row : -1;
+                    }
+                }
 
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextColored(color, "%02X", listingRow.byte);
+                ImGui::TextColored(color, "%04X", listingRow.address);
 
                 ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(color, "%02X", listingRow.byte);
+
+                ImGui::TableSetColumnIndex(3);
                 ImGui::TextColored(color, "%s", listingRow.instruction.c_str());
 
-                if (m_props.enableScroll && m_props.cursorPos != nullptr &&
-                    prevCursorPos != (*m_props.cursorPos) &&
-                    (*m_props.cursorPos) == row
+                if (m_enableScroll && m_cursorPos != nullptr &&
+                    prevCursorPos != (*m_cursorPos) &&
+                    (*m_cursorPos) == row
                 ) {
                     ImGui::SetScrollHereY(0.25f);
-                    prevCursorPos = (*m_props.cursorPos);
+                    prevCursorPos = (*m_cursorPos);
                 }
             }
 
@@ -117,8 +128,8 @@ private:
 
 class UiMemoryDisassembler : public IRenderable {
 public:
-    UiMemoryDisassembler(int* cursor = nullptr) 
-        : m_uiListing(UiListingProps{ m_listing, true, cursor })
+    UiMemoryDisassembler(int* cursor = nullptr, int* breakpoint = nullptr) 
+        : m_uiListing(m_listing, true, cursor, breakpoint)
     {}
 
     void render() override {
@@ -153,7 +164,7 @@ class UiOsListing : public IRenderable {
 public:
     UiOsListing(Controller &controller)
         : m_controller(controller)
-        , m_uiDisassembler(&m_cursorpos)
+        , m_uiDisassembler(&m_cursorpos, &m_controller.breakpoint)
     {
         m_uiDisassembler.disassemble(m_controller.getRom(), m_controller.UMPK_ROM_SIZE);
     }

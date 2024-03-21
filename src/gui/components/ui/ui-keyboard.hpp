@@ -99,6 +99,11 @@ private:
                 } else {
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
                 }
+
+                if (j == 2)
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+
+                
             }
             ImGui::NewLine();
         }

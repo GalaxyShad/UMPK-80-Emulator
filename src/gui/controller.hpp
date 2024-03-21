@@ -60,6 +60,7 @@ public:
     uint8_t getRegister(Cpu::Register reg) {
         return _umpk.getCpu().getRegister(reg);
     }
+
     void setRegister(Cpu::Register reg, uint8_t value) {
         _umpkMutex.lock();
         _umpk.getCpu().setRegister(reg, value);
@@ -74,6 +75,9 @@ public:
 
     const uint8_t *getRam() { return &(_umpk.getBus().ramFirst()); }
     const uint8_t *getRom() { return &(_umpk.getBus().romFirst()); }
+
+    // FIXME 
+    int breakpoint = -1;
 
 private:
     Umpk80 _umpk;

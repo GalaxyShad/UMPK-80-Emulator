@@ -2,7 +2,12 @@
 #define UI_LISTING_HPP
 
 #include <SFML/Graphics.hpp>
+#include <cstdio>
+#include <fstream>
 #include <imgui.h>
+#include <ios>
+#include <istream>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -26,46 +31,26 @@ public:
     UiListing(UiListingProps props) : m_props(props) {}
 
     void render() override {
-        // renderAsChild();
         renderAsTable();
     }
-
-
-
-private:
-    UiListingProps m_props;
-    int prevCursorPos = -1;
-
-private:
-    void renderAsChild() {
-        ImGui::BeginChild("##listing", ImVec2(-1, -1),
-                          true);
-
-        ImGuiStyle &style = ImGui::GetStyle();
-
+    
+    void exportToStream(std::ostream& stream) {
         for (int row = 0; row < m_props.listing.size(); row++) {
             auto listingRow = m_props.listing[row];
-            auto color = (m_props.cursorPos && ((*m_props.cursorPos) == row))
-                             ? style.Colors[ImGuiCol_ButtonActive]
-                             : style.Colors[ImGuiCol_Text];
 
-            ImGui::TextColored(
-                color, "%04X | %02X | %s", 
-                
-                listingRow.address,
+            char str[255];
+            std::snprintf(str, 255, "%04X | %02X | %s", listingRow.address,
                 listingRow.byte,
                 listingRow.instruction.c_str());
 
-            if (m_props.enableScroll && m_props.cursorPos != nullptr &&
-                prevCursorPos != (*m_props.cursorPos) &&
-                (*m_props.cursorPos) == row) {
-                ImGui::SetScrollHereY(0.25f);
-                prevCursorPos = (*m_props.cursorPos);
-            }
+            stream << std::string(str) << "\n";
         }
-
-        ImGui::EndChild();
     }
+
+private:
+    UiListingProps m_props;
+    char m_exportFileNameBuffer[255] = "disassembled.txt";
+    int prevCursorPos = -1;
 
     void renderAsTable() {
         if (ImGui::BeginTable("Dump", 3,
@@ -115,6 +100,18 @@ private:
 
             ImGui::EndTable();
         }
+
+        ImGui::Separator();
+
+        ImGui::InputText("File name", m_exportFileNameBuffer, 255);
+
+        if (ImGui::Button("Export")) {
+            std::ofstream ofs(m_exportFileNameBuffer);
+            exportToStream(ofs);
+            ofs.close();
+        }
+
+        ImGui::Spacing();
     }
 };
 
@@ -128,7 +125,9 @@ public:
         m_uiListing.render();
     }
 
-    void disassemble(const uint8_t* memory, size_t size) {
+    void disassemble(const uint8_t* memory, size_t size, uint16_t labelStart = 0x0000) {
+        m_listing.clear();
+        
         Disassembler disasm(memory, size);
 
         Disassembler::Result dis;
@@ -136,7 +135,7 @@ public:
             for (int i = 0; i < dis.bytesCount; i++) {
                 m_listing.push_back(
                     UiListingLine {
-                        (uint16_t)(dis.address + i), 
+                        (uint16_t)(labelStart + dis.address + i), 
                         dis.bytes[i],
                         i == 0 ? dis.instruction : "-"
                     }

@@ -1,18 +1,17 @@
 #ifndef UI_CMD_TABLE_HPP
 #define UI_CMD_TABLE_HPP
 
-#include <functional>
 #include <imgui.h>
-#include <vector>
-#include <string>
 #include <SFML/Graphics.hpp>
 
 #include "../irenderable.hpp"
 
-#include "../../../core/disassembler.hpp"
+#include "../../controller.hpp"
 
 class UiCmdTable : public IRenderable {
 public:
+    UiCmdTable(Controller& controller) : m_controller(controller) {}
+
     void render() override {
         if (!ImGui::BeginTable(
             "UiCmdTable", 
@@ -48,13 +47,18 @@ public:
                 ImGui::TableSetColumnIndex(column+1);
                                         
                 auto instr = Disassembler::getInstruction(row * 16 + column);
-                
-                ImGui::Selectable((std::string(instr.mnemonic) + " " + std::string(instr.operand)).c_str());
-                ImGui::SetItemTooltip("%02X", (row << 4) | column);
+                uint8_t cmd = (row << 4) | column;
+
+                if (ImGui::Selectable((std::string(instr.mnemonic) + " " + std::string(instr.operand)).c_str())) {
+                    m_controller.setCommand(cmd);
+                }
+                ImGui::SetItemTooltip("%02X", cmd);
             }
         }
         ImGui::EndTable();
     }
+private:
+    Controller& m_controller;
 };
 
 #endif // UI_CMD_TABLE_HPP

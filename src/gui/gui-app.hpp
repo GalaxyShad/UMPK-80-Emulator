@@ -29,7 +29,7 @@ public:
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-        m_components.push_back(std::make_pair("CMD Table", new UiCmdTable()));
+        m_components.push_back(std::make_pair("CMD Table", new UiCmdTable(m_controller)));
 
         m_components.push_back(
             std::make_pair("Display", new UiDisplay(m_controller)));

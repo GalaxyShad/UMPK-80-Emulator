@@ -57,6 +57,18 @@ public:
 
     void setMemory(uint16_t index, uint8_t data);
 
+    uint16_t getSystemPG() { 
+        uint16_t high = _umpk.getBus().memoryRead(0xBBF);
+        uint8_t  low  = _umpk.getBus().memoryRead(0xBBE);
+
+        return (high << 8) | low; 
+    }
+
+    void setCommand(uint8_t cmd) {
+        uint16_t adr = getSystemPG();
+        setMemory(adr, cmd);
+    }
+
     uint8_t getRegister(Cpu::Register reg) {
         return _umpk.getCpu().getRegister(reg);
     }

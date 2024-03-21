@@ -11,18 +11,10 @@
 #include "../../controller.hpp"
 #include "SFML/Window/Keyboard.hpp"
 
-struct UiKeyboardProps {
-    float size = 32.f;
-};
-
-struct UiKeyboardEmits {
-    std::function<void(const char* keyName)> emitKeyPress;
-};
-
 class UiKeyboard : public IRenderable {
 public:
-    UiKeyboard(UiKeyboardProps props, UiKeyboardEmits emits, Controller& controller) 
-        : m_props(props), m_emits(emits), m_controller(controller) {}
+    UiKeyboard(Controller& controller) 
+        : m_controller(controller) {}
 
     void render() override {
         uiHandler();
@@ -33,8 +25,6 @@ public:
     }
 
 private:
-    UiKeyboardProps m_props;
-    UiKeyboardEmits m_emits;
     Controller& m_controller;
 
     static const int M_KEYMAP_W = 7; 
@@ -93,10 +83,6 @@ private:
         {sf::Keyboard::F2, KeyboardKey::R},
     };
 
-    bool key(const char* label) {
-        return ImGui::Button(label, ImVec2(m_props.size, m_props.size));
-    }
-
     void uiHandler() {
         for (int i = 0; i < M_KEYMAP_H; i++) {
             for (int j = 0; j < M_KEYMAP_W; j++) {
@@ -105,9 +91,7 @@ private:
                 bool isEmpty = (i < 2 && j == 0);
 
                 if (!isEmpty) {
-                    if (key(keyLabel)) {
-                        m_emits.emitKeyPress(keyLabel);
-                    }
+                    ImGui::Button(keyLabel, ImVec2(32.0f, 32.0f));
 
                     m_uiKeysState[(int)m_keyMap[i][j]] = ImGui::IsItemActive();
 

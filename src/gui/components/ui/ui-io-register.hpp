@@ -10,14 +10,9 @@
 
 #include "../../controller.hpp"
 
-struct UiIoRegisterEmits {
-    std::function<void(uint8_t)> emitInRegisterChange;
-};
-
 class UiIoRegister : public IRenderable {
 public:
-    UiIoRegister(Controller &controller, UiIoRegisterEmits emits)
-        : m_emits(emits), m_controller(controller) {}
+    UiIoRegister(Controller &controller) : m_controller(controller) {}
 
     void render() override {
         ImGui::Text("P%02X Out", m_controller.umpk().PORT_IO);
@@ -36,26 +31,22 @@ public:
 
         ImGui::Text("P%02x In", m_controller.umpk().PORT_IO);
 
+        uint8_t inData = vecToUint8(vecIn);
         for (int i = 0; i < 8; i++) {
             if (ImGui::Checkbox(("##i" + std::to_string(7 - i)).c_str(),
                                 &vecIn[i])) {
-                m_emits.emitInRegisterChange(vecToUint8(vecIn));
+                m_controller.port5In(inData);
             }
 
             ImGui::SameLine();
         }
 
-        uint8_t inData = vecToUint8(vecIn);
-
-        ImGui::Text("= %02X", inData);
-
-        m_controller.port5In(inData);
+        ImGui::Text("= %02X", inData);        
     }
 
     void setOut(uint8_t value) { uint8ToVec(value, vecOut); }
 
 private:
-    UiIoRegisterEmits m_emits;
     Controller &m_controller;
 
     bool vecIn[8] = {0};

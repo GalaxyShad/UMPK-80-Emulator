@@ -24,15 +24,9 @@ enum UiCpuControlFlags {
     PARRY
 };
 
-struct UiCpuControlEmits {
-    std::function<void(UiCpuControlRegister, uint8_t)> onRegisterChange;
-    std::function<void(UiCpuControlFlags, bool)> onFlagChange;
-    std::function<void(const char*)> onControlButton;
-};
-
 class UiCpuControl : public IRenderable {
 public: 
-    UiCpuControl(UiCpuControlEmits emits, Controller& controller) : m_emits(emits), m_controller(controller) {}
+    UiCpuControl(Controller& controller) : m_controller(controller) {}
 
     void render() override {
         renderControls();
@@ -41,28 +35,7 @@ public:
         renderMisc();
     }
 
-    void setRegister(UiCpuControlRegister reg, uint8_t value) {
-        m_registers[reg] = value;
-    }
-
-    void setFlag(UiCpuControlFlags flag, bool value) {
-        m_flags[flag] = value;
-    }
-
-    void setPgCounter(uint16_t pgCounter) {
-        m_programCounter = pgCounter;
-    }
-
-    void setStackPointer(uint16_t stackPointer) {
-        m_stackPointer = stackPointer;
-    }
-
-    void setCmd(uint8_t cmd) {
-        m_cmd = cmd;
-    }
-
 private:
-    UiCpuControlEmits m_emits;
     Controller& m_controller;
 
     uint16_t m_stackPointer   = 0x0000;
@@ -86,8 +59,6 @@ private:
                     case 3: m_controller.onButtonStop(); break;
                     case 4: m_controller.onBtnReset(); break;
                 }
-
-                m_emits.onControlButton(m_controlButtons[i]);
             }
             
             ImGui::SameLine();
@@ -130,7 +101,6 @@ private:
                     "%02X"
                 )) {
                     m_controller.setRegister((Cpu::Register)c, m_registers[c]);
-                    m_emits.onRegisterChange((UiCpuControlRegister)c, m_registers[c]);
                 }
                 ImGui::EndDisabled();
             }

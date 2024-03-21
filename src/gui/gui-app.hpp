@@ -30,30 +30,17 @@ public:
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         m_components.push_back(std::make_pair("CMD Table", new UiCmdTable()));
-        m_components.push_back(
-            std::make_pair("CPU controls", makeCpuControl()));
 
         m_components.push_back(
             std::make_pair("Display", new UiDisplay(m_controller)));
 
-        UiKeyboardEmits emits;
-
-        emits.emitKeyPress = [](const char *key) {
-            std::cout << key << std::endl;
-        };
-
         m_components.push_back(
-            std::make_pair("Keyboard", new UiKeyboard(UiKeyboardProps(), emits,
-                                                      m_controller)));
+            std::make_pair("Keyboard", new UiKeyboard(m_controller)));
 
         m_components.push_back(
             std::make_pair("Listing", new UiOsListing(m_controller)));
 
-        m_components.push_back(std::make_pair(
-            "IO",
-            new UiIoRegister(m_controller, UiIoRegisterEmits{[](uint8_t val) {
-                                 std::cout << val << std::endl;
-                             }})));
+        m_components.push_back(std::make_pair("IO", new UiIoRegister(m_controller)));
 
         m_components.push_back(std::make_pair("Disassembler", new UiDecompilerWindow(m_controller)));
 
@@ -61,6 +48,8 @@ public:
 
         m_components.push_back(std::make_pair("ROM", new UiRom(m_controller)));
         m_components.push_back(std::make_pair("RAM", new UiRam(m_controller)));
+
+        m_components.push_back(std::make_pair("Cpu Control", new UiCpuControl(m_controller)));
     }
 
     virtual ~GuiApp() {
@@ -151,27 +140,6 @@ private:
                 m_window.close();
             }
         }
-    }
-
-    UiCpuControl *makeCpuControl() {
-        UiCpuControl *res = nullptr;
-
-        UiCpuControlEmits cpuControlEmits = {};
-
-        cpuControlEmits.onControlButton = [=](const char *btn) {
-            std::cout << btn << "\n";
-        };
-
-        cpuControlEmits.onFlagChange = [](UiCpuControlFlags flag, bool value) {
-            std::cout << flag << " " << value << "\n";
-        };
-
-        cpuControlEmits.onRegisterChange = [](UiCpuControlRegister reg,
-                                              uint8_t value) {
-            std::cout << reg << " " << value << "\n";
-        };
-
-        return new UiCpuControl(cpuControlEmits, m_controller);
     }
 
     void _applyTheme() {

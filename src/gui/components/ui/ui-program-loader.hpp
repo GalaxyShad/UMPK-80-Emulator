@@ -4,7 +4,6 @@
 #include <imgui.h>
 #include "../irenderable.hpp"
 #include "../../controller.hpp"
-#include "ui-memory-dump.hpp"
 #include "ui-listing.hpp"
 #include "../../../core/disassembler.hpp"
 

@@ -149,7 +149,7 @@ void Cpu::_updateFlagsState(uint16_t result) {
     _regFlag.sign       = (data >> 7) & 0b1;
 
     //https://retrocomputing.stackexchange.com/questions/11262/can-someone-explain-this-algorithm-used-to-compute-the-auxiliary-carry-flag
-    _regFlag.auxcarry   = (result >> 4)  ? 0b1 : 0b0;
+    _regFlag.auxcarry   = (data & 0x0F) > 0x09;
    
     uint8_t p = data;
     p ^= p >> 4;

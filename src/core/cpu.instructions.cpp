@@ -46,27 +46,23 @@ void Cpu::_cma() {
 
 
 void Cpu::_daa() { 
-    assert(false && "DAA not implemented");
-    // uint8_t aLow  = _regA & 0x0F; 
+    uint8_t aLow  = _regA & 0x0F; 
     
+    uint16_t res = _regA;
 
-    // uint16_t res = aLow;
+    if (aLow > 0x09 || _regFlag.auxcarry) {
+        res += 0x06;
+        _updateFlagsState(res);
 
-    // if (aLow > 0x09 || _regFlag.auxcarry) {
-    //     res += 0x06;
-    //     _updateFlagsState(res);
+        _regA = (uint8_t)res;
+    }
 
-    //     _regA = _regA | (uint8_t)res;
-    //     uint8_t aHigh = (_regA & 0xF0) >> 4;
+    uint8_t aHigh = (_regA & 0xF0) >> 4;
 
-    //     if (aHigh > 0x09 || _regFlag.carry) {
-    //         aHigh += 0x06;
-    //         _regA = (aHigh << 4) | _regA;
-    //     }
-
-    // } 
-
-    // throw std::logic_error("DAA instruction is not implemented"); 
+    if (aHigh > 0x09 || _regFlag.carry) {
+        aHigh += 0x06;
+        _regA = (aHigh << 4) | (_regA & 0x0F);
+    }
 }
 
 
@@ -338,7 +334,7 @@ void Cpu::_push() {
         psw |= _regFlag.sign     << 7;
         psw |= _regFlag.zero     << 6;
         psw |= _regFlag.auxcarry << 4;
-        psw |= _regFlag.parity    << 2;
+        psw |= _regFlag.parity   << 2;
         psw |= _regFlag.carry;
 
         uint16_t af =  (_regA << 8) | psw;
@@ -363,7 +359,7 @@ void Cpu::_pop() {
         _regFlag.sign     = (apsw & 0b10000000) != 0;
         _regFlag.zero     = (apsw & 0b01000000) != 0;
         _regFlag.auxcarry = (apsw & 0b00010000) != 0;
-        _regFlag.parity    = (apsw & 0b00000100) != 0;
+        _regFlag.parity   = (apsw & 0b00000100) != 0;
         _regFlag.carry    = (apsw & 0b00000001) != 0;
 
         _regA = apsw >> 8;

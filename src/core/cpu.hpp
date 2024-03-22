@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bus.hpp"
+#include <cstdint>
 
 // TODO DAA instruction
 // TODO fix auxcarry flag
@@ -37,15 +38,23 @@ public:
     CpuFlagsMapping getFlags() const                { return _regFlag;  }
     void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
 
-    enum Register {
+    enum class Register {
         B, C,
         D, E,
         H, L,
         M, A
     };
 
+    uint8_t A() { return getRegister(Register::A); }
+    uint8_t B() { return getRegister(Register::B); }
+    uint8_t C() { return getRegister(Register::C); }
+    uint8_t D() { return getRegister(Register::D); }
+    uint8_t E() { return getRegister(Register::E); }
+    uint8_t H() { return getRegister(Register::H); }
+    uint8_t L() { return getRegister(Register::L); }
+
     uint8_t getRegister(Register reg) const         { return _getRegData((uint8_t)reg); }
-    void    setRegister(Register reg, uint8_t data) { return _setRegData(reg, data); }
+    void    setRegister(Register reg, uint8_t data) { return _setRegData((uint8_t)reg, data); }
 
     void interruptRst(int rstNum) {
         if (rstNum < 8 && rstNum >= 0) _call(rstNum * 8, true);

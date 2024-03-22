@@ -299,6 +299,8 @@ void Cpu::_cpi() {
     _updateFlagsState(res);
 }
 
+#pragma endregion
+
 // Rotate accumulator instructions
 void Cpu::_rlc() { 
     _regFlag.carry = (_regA & 0b10000000) >> 7;
@@ -331,15 +333,15 @@ void Cpu::_push() {
 
     // Flags and A store
     if (regPairCode == 0b11) {
-        uint8_t flags = 0b00000010;
+        uint8_t psw = 0b00000010;
 
-        flags |= _regFlag.sign     << 7;
-        flags |= _regFlag.zero     << 6;
-        flags |= _regFlag.auxcarry << 4;
-        flags |= _regFlag.parry    << 2;
-        flags |= _regFlag.carry;
+        psw |= _regFlag.sign     << 7;
+        psw |= _regFlag.zero     << 6;
+        psw |= _regFlag.auxcarry << 4;
+        psw |= _regFlag.parry    << 2;
+        psw |= _regFlag.carry;
 
-        uint16_t af =  (_regA << 8) | flags;
+        uint16_t af =  (_regA << 8) | psw;
 
         _stackPush(af);
 
@@ -354,22 +356,22 @@ void Cpu::_push() {
 void Cpu::_pop() { 
     uint8_t regPairCode = (_regCmd & 0b00110000) >> 4;
 
-    uint16_t data = _stackPop();
+    uint16_t apsw = _stackPop();
 
     // Flags and A read
     if (regPairCode == 0b11) {
-        _regFlag.sign     = (data & 0b10000000) != 0;
-        _regFlag.zero     = (data & 0b01000000) != 0;
-        _regFlag.auxcarry = (data & 0b00010000) != 0;
-        _regFlag.parry    = (data & 0b00000100) != 0;
-        _regFlag.carry    = (data & 0b00000001) != 0;
+        _regFlag.sign     = (apsw & 0b10000000) != 0;
+        _regFlag.zero     = (apsw & 0b01000000) != 0;
+        _regFlag.auxcarry = (apsw & 0b00010000) != 0;
+        _regFlag.parry    = (apsw & 0b00000100) != 0;
+        _regFlag.carry    = (apsw & 0b00000001) != 0;
 
-        _regA = data >> 8;
+        _regA = apsw >> 8;
 
         return;
     }
     
-    _setRegPairData(regPairCode, data);
+    _setRegPairData(regPairCode, apsw);
 }
 
 

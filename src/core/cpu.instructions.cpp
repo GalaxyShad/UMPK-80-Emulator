@@ -331,7 +331,14 @@ void Cpu::_push() {
 
     // Flags and A store
     if (regPairCode == 0b11) {
-        uint8_t  flags = *((uint8_t*)&_regFlag); 
+        uint8_t flags = 0b00000010;
+
+        flags |= _regFlag.sign     << 7;
+        flags |= _regFlag.zero     << 6;
+        flags |= _regFlag.auxcarry << 4;
+        flags |= _regFlag.parry    << 2;
+        flags |= _regFlag.carry;
+
         uint16_t af =  (_regA << 8) | flags;
 
         _stackPush(af);
@@ -351,7 +358,12 @@ void Cpu::_pop() {
 
     // Flags and A read
     if (regPairCode == 0b11) {
-        *((uint8_t*)&_regFlag) = (uint8_t)data;
+        _regFlag.sign     = (data & 0b10000000) != 0;
+        _regFlag.zero     = (data & 0b01000000) != 0;
+        _regFlag.auxcarry = (data & 0b00010000) != 0;
+        _regFlag.parry    = (data & 0b00000100) != 0;
+        _regFlag.carry    = (data & 0b00000001) != 0;
+
         _regA = data >> 8;
 
         return;

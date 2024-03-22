@@ -80,6 +80,7 @@ public:
 
     void loadOS(const uint8_t *os) { _bus.loadRom(os, UMPK80_OS_SIZE); }
 
+    RegisterSoundDevice& speaker() { return _speaker; }
     Cpu &getCpu() { return _intel8080; }
     Bus &getBus() { return _bus; }
 
@@ -93,7 +94,7 @@ private:
     RegisterScanDevice _registerScan;
     RegisterDevice _register5In;
     RegisterDevice _register5Out;
-
+    RegisterSoundDevice _speaker;
     RegisterControlStep _registerStepExec;
 
 public:
@@ -119,6 +120,8 @@ private:
 
         _bus.portBindIn(PORT_IO, _register5In);
         _bus.portBindOut(PORT_IO, _register5Out);
+
+        _bus.portBindOut(PORT_SPEAKER, _speaker);
 
         _bus.portBindOut(0xE, _registerStepExec);
     }

@@ -143,12 +143,12 @@ void Controller::_handleHooks(Cpu &cpu) {
     const uint16_t SOUND_FUNC_ADR = 0x0447;
     const uint16_t DELAY_FUNC_ADR = 0x0506;
 
-    if (pgCounter == SOUND_FUNC_ADR) {
-        uint8_t duration = cpu.getRegister(Cpu::Register::D);
-        uint8_t frequency = 0xFF - cpu.getRegister(Cpu::Register::B);
+    // if (pgCounter == SOUND_FUNC_ADR) {
+    //     uint8_t duration = cpu.getRegister(Cpu::Register::D);
+    //     uint8_t frequency = 0xFF - cpu.getRegister(Cpu::Register::B);
 
-        dj.tone(frequency * 2, duration * 130);
-    }
+    //     dj.tone(frequency * 2, duration * 130);
+    // }
 
     if (pgCounter == DELAY_FUNC_ADR) {
         uint16_t delay = cpu.getRegister(Cpu::Register::B);
@@ -171,7 +171,7 @@ void Controller::_umpkWork() {
         _umpkMutex.lock();
         _umpk.tick();
 
-        _handleHooks(_umpk.getCpu());
+        //_handleHooks(_umpk.getCpu());
         _umpkMutex.unlock();
 
         if (breakpoint == _umpk.getCpu().getProgramCounter())

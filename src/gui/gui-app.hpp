@@ -31,14 +31,11 @@ public:
 
         m_components.push_back(std::make_pair("CMD Table", new UiCmdTable(m_controller)));
 
-        m_components.push_back(
-            std::make_pair("Display", new UiDisplay(m_controller)));
+        m_components.push_back(std::make_pair("Display", new UiDisplay(m_controller)));
 
-        m_components.push_back(
-            std::make_pair("Keyboard", new UiKeyboard(m_controller)));
+        m_components.push_back(std::make_pair("Keyboard", new UiKeyboard(m_controller)));
 
-        m_components.push_back(
-            std::make_pair("Listing", new UiOsListing(m_controller)));
+        m_components.push_back(std::make_pair("Listing", new UiOsListing(m_controller)));
 
         m_components.push_back(std::make_pair("IO", new UiIoRegister(m_controller)));
 

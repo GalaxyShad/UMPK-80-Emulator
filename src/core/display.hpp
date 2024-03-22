@@ -27,11 +27,23 @@ public:
             return;
 
         _digits[digit] = _lastSegmentValue;
+
+        _lightoffTimer = 255;
     }
 
-    uint8_t get(uint8_t digit) { return _digits[digit]; };
+    uint8_t get(uint8_t digit) { 
+        _lightoffTimer--;
+
+        if (_lightoffTimer <= 0) {
+            _lightoffTimer = 0;
+            return 0x00;
+        }
+
+        return _digits[digit]; 
+    };
 
 private:
     uint8_t _digits[6] = {0};
     uint8_t _lastSegmentValue = 0x00;
+    int _lightoffTimer = 0;
 };

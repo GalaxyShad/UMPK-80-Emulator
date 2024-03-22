@@ -12,7 +12,7 @@ struct CpuFlagsMapping {
             :1, 
             auxcarry: 1, 
             :1,  
-            parry: 1, 
+            parity: 1, 
             :1, 
             carry: 1; 
 };

@@ -14,7 +14,7 @@ void Cpu::tick() {
 void Cpu::reset() {
     _regFlag.auxcarry = 0;
     _regFlag.carry = 0;
-    _regFlag.parry = 0;
+    _regFlag.parity = 0;
     _regFlag.sign = 0;
     _regFlag.zero = 0;
 }
@@ -155,5 +155,5 @@ void Cpu::_updateFlagsState(uint16_t result) {
     p ^= p >> 4;
     p ^= p >> 2;
     p ^= p >> 1;
-    _regFlag.parry = (~p) & 0b1;
+    _regFlag.parity = (~p) & 0b1;
 }

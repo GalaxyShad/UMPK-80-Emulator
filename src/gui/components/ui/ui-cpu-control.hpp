@@ -129,7 +129,7 @@ private:
         m_flags[1] = flags.sign;
         m_flags[2] = flags.zero;
         m_flags[3] = flags.auxcarry;
-        m_flags[4] = flags.parry;
+        m_flags[4] = flags.parity;
 
         if (m_controller.isUmpkRunning()) {
             for (int i = 0; i < 5; i++) {
@@ -145,7 +145,7 @@ private:
                     flags.sign = m_flags[1];
                     flags.zero = m_flags[2];
                     flags.auxcarry = m_flags[3];
-                    flags.parry = m_flags[4];
+                    flags.parity = m_flags[4];
 
                     cpu.setFlags(flags);
                 }

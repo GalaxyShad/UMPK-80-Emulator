@@ -338,7 +338,7 @@ void Cpu::_push() {
         psw |= _regFlag.sign     << 7;
         psw |= _regFlag.zero     << 6;
         psw |= _regFlag.auxcarry << 4;
-        psw |= _regFlag.parry    << 2;
+        psw |= _regFlag.parity    << 2;
         psw |= _regFlag.carry;
 
         uint16_t af =  (_regA << 8) | psw;
@@ -363,7 +363,7 @@ void Cpu::_pop() {
         _regFlag.sign     = (apsw & 0b10000000) != 0;
         _regFlag.zero     = (apsw & 0b01000000) != 0;
         _regFlag.auxcarry = (apsw & 0b00010000) != 0;
-        _regFlag.parry    = (apsw & 0b00000100) != 0;
+        _regFlag.parity    = (apsw & 0b00000100) != 0;
         _regFlag.carry    = (apsw & 0b00000001) != 0;
 
         _regA = apsw >> 8;
@@ -494,8 +494,8 @@ void Cpu::_jz()     { _jmp(_regFlag.zero  == 0b1); }
 void Cpu::_jnz()    { _jmp(_regFlag.zero  == 0b0); }
 void Cpu::_jm()     { _jmp(_regFlag.sign  == 0b1); }
 void Cpu::_jp()     { _jmp(_regFlag.sign  == 0b0); }
-void Cpu::_jpe()    { _jmp(_regFlag.parry == 0b1); }
-void Cpu::_jpo()    { _jmp(_regFlag.parry == 0b0); }
+void Cpu::_jpe()    { _jmp(_regFlag.parity == 0b1); }
+void Cpu::_jpo()    { _jmp(_regFlag.parity == 0b0); }
 
 // Call instructions
 void Cpu::_call(uint16_t adr, bool cond) {
@@ -519,8 +519,8 @@ void Cpu::_cz()     { _call(_regFlag.zero  == 0b1); }
 void Cpu::_cnz()    { _call(_regFlag.zero  == 0b0); }
 void Cpu::_cm()     { _call(_regFlag.sign  == 0b1); }
 void Cpu::_cp()     { _call(_regFlag.sign  == 0b0); }
-void Cpu::_cpe()    { _call(_regFlag.parry == 0b1); }
-void Cpu::_cpo()    { _call(_regFlag.parry == 0b0); }
+void Cpu::_cpe()    { _call(_regFlag.parity == 0b1); }
+void Cpu::_cpo()    { _call(_regFlag.parity == 0b0); }
 
 // Return instructions 
 void Cpu::_ret(bool cond) { 
@@ -537,8 +537,8 @@ void Cpu::_rz()  { _ret(_regFlag.zero  == 0b1); }
 void Cpu::_rnz() { _ret(_regFlag.zero  == 0b0); }
 void Cpu::_rm()  { _ret(_regFlag.sign  == 0b1); }
 void Cpu::_rp()  { _ret(_regFlag.sign  == 0b0); }
-void Cpu::_rpe() { _ret(_regFlag.parry == 0b1); }
-void Cpu::_rpo() { _ret(_regFlag.parry == 0b0); }
+void Cpu::_rpe() { _ret(_regFlag.parity == 0b1); }
+void Cpu::_rpo() { _ret(_regFlag.parity == 0b0); }
 
 // Rst instruction
 void Cpu::_rst() { 

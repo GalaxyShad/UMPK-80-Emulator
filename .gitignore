@@ -3,3 +3,5 @@ build/
 lib/
 docs/
 CMakeCache.txt
+.clangd
+.cache/

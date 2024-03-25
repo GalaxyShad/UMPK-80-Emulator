@@ -1,171 +1,9 @@
 #include "cpu.hpp"
 
-#include <exception>
-#include <iostream>
-
-Cpu::Cpu(Bus& bus) : _bus(bus) {
-    reset();
-}
-
-void Cpu::tick() {
-    _readCommand();
-}
-
-
-void Cpu::reset() {
-    _regFlag.auxcarry = 0;
-    _regFlag.carry = 0;
-    _regFlag.parry = 0;
-    _regFlag.sign = 0;
-    _regFlag.zero = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-// Machine cycles
-void Cpu::_readCommand(uint8_t opcode) {
-    instructionFunction_t instruction = _instructions[opcode];
-
-    if (instruction == nullptr) {
-        printf("%04x: %02x\n", _prgCounter, opcode);
-        throw std::logic_error("Unexisting command");
-    }
-
-    _regCmd = opcode;
-    _prgCounter++;
-    _regAdr = _prgCounter;
-
-    (this->*instruction)();
-}
-
-void Cpu::_readCommand() {
-    uint8_t opcode = _bus.memoryRead(_prgCounter);
-
-    _readCommand(opcode);
-}
-
-
-void Cpu::_memoryWrite(uint8_t data) {
-    _bus.memoryWrite(_regAdr, data);
-}
-
-
-uint8_t Cpu::_memoryRead() {
-    uint8_t data = _bus.memoryRead(_regAdr); 
-
-    _prgCounter++;
-    _regAdr = _prgCounter;
-    
-    return data; 
-}   
-
-
-void Cpu::_stackPush(uint16_t data) {
-    _stackPointer--;
-    _bus.memoryWrite(_stackPointer, (uint8_t)(data >> 8));
-
-    _stackPointer--;
-    _bus.memoryWrite(_stackPointer, (uint8_t)(data));
-}
-
-
-uint16_t Cpu::_stackPop() {
-    uint16_t data = _bus.memoryRead(_stackPointer);
-    _stackPointer++;
-
-    data = (_bus.memoryRead(_stackPointer) << 8) | data;
-    _stackPointer++;
-
-    return data;
-}
-
-
-void Cpu::_portWrite(uint8_t port, uint8_t data) {
-    _bus.portOut(port, data);
-}
-
-
-uint8_t Cpu::_portRead(uint8_t port) {
-    return _bus.portIn(port);
-}
-
-
-// Register operations
-uint8_t Cpu::_getRegData(uint8_t regCode) {
-    if (regCode == 0b110) {
-        return _bus.memoryRead(((uint16_t)_regH << 8) | _regL);
-    }
-
-    return *_registers[regCode];
-}
-
-
-void Cpu::_setRegData(uint8_t regCode, uint8_t data) {
-    if (regCode == 0b110) {
-        _bus.memoryWrite(((uint16_t)_regH << 8) | _regL, data);
-        return;
-    }
-
-    *_registers[regCode] = data;
-}
-
-
-uint16_t Cpu::_getRegPairData(uint8_t regPairCode) {
-    uint16_t data = 0x0000;
-
-    switch (regPairCode) {
-        case 0b00: data = ((uint16_t)_regB << 8) | _regC; break;
-        case 0b01: data = ((uint16_t)_regD << 8) | _regE; break;
-        case 0b10: data = ((uint16_t)_regH << 8) | _regL; break;
-        case 0b11: data = _stackPointer;        break;
-        default:   throw std::logic_error("Unexisting register pair code");
-    }
-
-    return data;
-}
-
-
-void Cpu::_setRegPairData(uint8_t regPairCode, uint16_t data) {
-    _setRegPairData(regPairCode, (uint8_t)(data >> 8), (uint8_t)data);
-}
-
-
-void Cpu::_setRegPairData(uint8_t regPairCode, uint8_t dataA, uint8_t dataB) {
-    switch (regPairCode) {
-        case 0b00:  _regB = dataA; _regC = dataB;            break;
-        case 0b01:  _regD = dataA; _regE = dataB;            break;
-        case 0b10:  _regH = dataA; _regL = dataB;            break;
-        case 0b11:  _stackPointer = (dataA << 8) | dataB;    break;
-        default:    throw std::logic_error("Unexisting register pair code");
-    }
-
-}
-
-// Utility
-void Cpu::_updateFlagsState(uint16_t result) {
-
-    uint8_t data = (uint8_t)result;
-
-    _regFlag.carry      = (result >> 8)  ? 0b1 : 0b0;  
-    _regFlag.zero       = (data == 0x00) ? 0b1 : 0b0;
-    _regFlag.sign       = (data >> 7) & 0b1;
-
-    //https://retrocomputing.stackexchange.com/questions/11262/can-someone-explain-this-algorithm-used-to-compute-the-auxiliary-carry-flag
-    _regFlag.auxcarry   = (result >> 4)  ? 0b1 : 0b0;
-   
-    
-    uint8_t p = data;
-    p ^= p >> 4;
-    p ^= p >> 2;
-    p ^= p >> 1;
-    _regFlag.parry = (~p) & 0b1;
-}
+#include <assert.h>
 
 // Nop instruction
-void Cpu::_nop() { 
-
-}
+void Cpu::_nop() {}
 
 // Carry bit instructions
 void Cpu::_stc() { 
@@ -208,26 +46,23 @@ void Cpu::_cma() {
 
 
 void Cpu::_daa() { 
-    // uint8_t aLow  = _regA & 0x0F; 
+    uint8_t aLow  = _regA & 0x0F; 
     
+    uint16_t res = _regA;
 
-    // uint16_t res = aLow;
+    if (aLow > 0x09 || _regFlag.auxcarry) {
+        res += 0x06;
+        _updateFlagsState(res);
 
-    // if (aLow > 0x09 || _regFlag.auxcarry) {
-    //     res += 0x06;
-    //     _updateFlagsState(res);
+        _regA = (uint8_t)res;
+    }
 
-    //     _regA = _regA | (uint8_t)res;
-    //     uint8_t aHigh = (_regA & 0xF0) >> 4;
+    uint8_t aHigh = (_regA & 0xF0) >> 4;
 
-    //     if (aHigh > 0x09 || _regFlag.carry) {
-    //         aHigh += 0x06;
-    //         _regA = (aHigh << 4) | _regA;
-    //     }
-
-    // } 
-
-    throw std::logic_error("DAA instruction is not implemented"); 
+    if (aHigh > 0x09 || _regFlag.carry) {
+        aHigh += 0x06;
+        _regA = (aHigh << 4) | (_regA & 0x0F);
+    }
 }
 
 
@@ -460,6 +295,8 @@ void Cpu::_cpi() {
     _updateFlagsState(res);
 }
 
+#pragma endregion
+
 // Rotate accumulator instructions
 void Cpu::_rlc() { 
     _regFlag.carry = (_regA & 0b10000000) >> 7;
@@ -492,8 +329,15 @@ void Cpu::_push() {
 
     // Flags and A store
     if (regPairCode == 0b11) {
-        uint8_t  flags = *((uint8_t*)&_regFlag); 
-        uint16_t af =  (_regA << 8) | flags;
+        uint8_t psw = 0b00000010;
+
+        psw |= _regFlag.sign     << 7;
+        psw |= _regFlag.zero     << 6;
+        psw |= _regFlag.auxcarry << 4;
+        psw |= _regFlag.parity   << 2;
+        psw |= _regFlag.carry;
+
+        uint16_t af =  (_regA << 8) | psw;
 
         _stackPush(af);
 
@@ -508,17 +352,22 @@ void Cpu::_push() {
 void Cpu::_pop() { 
     uint8_t regPairCode = (_regCmd & 0b00110000) >> 4;
 
-    uint16_t data = _stackPop();
+    uint16_t apsw = _stackPop();
 
     // Flags and A read
     if (regPairCode == 0b11) {
-        *((uint8_t*)&_regFlag) = (uint8_t)data;
-        _regA = data >> 8;
+        _regFlag.sign     = (apsw & 0b10000000) != 0;
+        _regFlag.zero     = (apsw & 0b01000000) != 0;
+        _regFlag.auxcarry = (apsw & 0b00010000) != 0;
+        _regFlag.parity   = (apsw & 0b00000100) != 0;
+        _regFlag.carry    = (apsw & 0b00000001) != 0;
+
+        _regA = apsw >> 8;
 
         return;
     }
     
-    _setRegPairData(regPairCode, data);
+    _setRegPairData(regPairCode, apsw);
 }
 
 
@@ -592,6 +441,7 @@ void Cpu::_sta() {
     _memoryWrite(_regA);
 }
 
+
 void Cpu::_lda() { 
     uint8_t  lowAdr = _memoryRead();
     _regAdr = (_memoryRead() << 8) | lowAdr;
@@ -607,6 +457,7 @@ void Cpu::_shld() {
     _bus.memoryWrite(adr,   _regL);
     _bus.memoryWrite(adr+1, _regH);
 }
+
 
 void Cpu::_lhld() { 
     uint8_t  lowAdr = _memoryRead();
@@ -632,15 +483,15 @@ void Cpu::_jmp(bool cond) {
     
 }
 
-void Cpu::_jmp()    { _jmp(true);               }
-void Cpu::_jc()     { _jmp(_regFlag.carry);     }
-void Cpu::_jnc()    { _jmp(!_regFlag.carry);    }
-void Cpu::_jz()     { _jmp(_regFlag.zero);      }
-void Cpu::_jnz()    { _jmp(!_regFlag.zero);     }
-void Cpu::_jm()     { _jmp(_regFlag.sign);      }
-void Cpu::_jp()     { _jmp(!_regFlag.sign);     }
-void Cpu::_jpe()    { _jmp(_regFlag.parry);     }
-void Cpu::_jpo()    { _jmp(!_regFlag.parry);    }
+void Cpu::_jmp()    { _jmp(true);                  }
+void Cpu::_jc()     { _jmp(_regFlag.carry == 0b1); }
+void Cpu::_jnc()    { _jmp(_regFlag.carry == 0b0); }
+void Cpu::_jz()     { _jmp(_regFlag.zero  == 0b1); }
+void Cpu::_jnz()    { _jmp(_regFlag.zero  == 0b0); }
+void Cpu::_jm()     { _jmp(_regFlag.sign  == 0b1); }
+void Cpu::_jp()     { _jmp(_regFlag.sign  == 0b0); }
+void Cpu::_jpe()    { _jmp(_regFlag.parity == 0b1); }
+void Cpu::_jpo()    { _jmp(_regFlag.parity == 0b0); }
 
 // Call instructions
 void Cpu::_call(uint16_t adr, bool cond) {
@@ -664,8 +515,8 @@ void Cpu::_cz()     { _call(_regFlag.zero  == 0b1); }
 void Cpu::_cnz()    { _call(_regFlag.zero  == 0b0); }
 void Cpu::_cm()     { _call(_regFlag.sign  == 0b1); }
 void Cpu::_cp()     { _call(_regFlag.sign  == 0b0); }
-void Cpu::_cpe()    { _call(_regFlag.parry == 0b1); }
-void Cpu::_cpo()    { _call(_regFlag.parry == 0b0); }
+void Cpu::_cpe()    { _call(_regFlag.parity == 0b1); }
+void Cpu::_cpo()    { _call(_regFlag.parity == 0b0); }
 
 // Return instructions 
 void Cpu::_ret(bool cond) { 
@@ -675,15 +526,15 @@ void Cpu::_ret(bool cond) {
     _prgCounter = adr;
 }
 
-void Cpu::_ret() { _ret(true);              }
-void Cpu::_rc()  { _ret(_regFlag.carry);    }
-void Cpu::_rnc() { _ret(!_regFlag.carry);   }
-void Cpu::_rz()  { _ret(_regFlag.zero);     }
-void Cpu::_rnz() { _ret(!_regFlag.zero);    }
-void Cpu::_rm()  { _ret(_regFlag.sign);     }
-void Cpu::_rp()  { _ret(!_regFlag.sign);    }
-void Cpu::_rpe() { _ret(_regFlag.parry);    }
-void Cpu::_rpo() { _ret(!_regFlag.parry);   }
+void Cpu::_ret() { _ret(true);                  }
+void Cpu::_rc()  { _ret(_regFlag.carry == 0b1); }
+void Cpu::_rnc() { _ret(_regFlag.carry == 0b0); }
+void Cpu::_rz()  { _ret(_regFlag.zero  == 0b1); }
+void Cpu::_rnz() { _ret(_regFlag.zero  == 0b0); }
+void Cpu::_rm()  { _ret(_regFlag.sign  == 0b1); }
+void Cpu::_rp()  { _ret(_regFlag.sign  == 0b0); }
+void Cpu::_rpe() { _ret(_regFlag.parity == 0b1); }
+void Cpu::_rpo() { _ret(_regFlag.parity == 0b0); }
 
 // Rst instruction
 void Cpu::_rst() { 

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(umpk-80-emu-ui LANGUAGES CXX)
 
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
@@ -14,7 +17,7 @@ FetchContent_MakeAvailable(SFML)
 
 FetchContent_Declare(ImGui
     GIT_REPOSITORY https://github.com/ocornut/imgui
-    GIT_TAG v1.89.9)
+    GIT_TAG v1.90.4-docking)
 FetchContent_MakeAvailable(ImGui)
 FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
 
@@ -29,6 +32,12 @@ add_executable(umpk-80-emu-ui ${SOURCES})
 
 target_link_libraries(umpk-80-emu-ui PRIVATE sfml-audio sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)
+
+target_compile_definitions(umpk-80-emu-ui
+    PRIVATE
+        # If the debug configuration pass the DEBUG define to the compiler 
+        $<$<CONFIG:Debug>:DEBUG>
+)
 
 if(WIN32)
     add_custom_command(

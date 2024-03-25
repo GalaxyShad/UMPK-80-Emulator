@@ -35,6 +35,9 @@ class Bus {
             return _memory[adr & 0x0FFF];
         }
 
+        const uint8_t& romFirst() { return _memory[0]; }
+        const uint8_t& ramFirst() { return _memory[0x0800]; }
+
         void loadRom(const uint8_t* buff, size_t size) {
             memcpy(_memory, buff, size);
         }
@@ -58,7 +61,6 @@ class Bus {
         }
 
         uint8_t portIn(uint8_t port) {
-            // return 0x00;
             return (_inDevices[port] != nullptr) ? _inDevices[port]->busPortRead() : 0x00;
         }
 

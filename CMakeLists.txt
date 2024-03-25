@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(umpk-80-emu-ui LANGUAGES CXX)
 
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
@@ -27,8 +29,6 @@ FetchContent_MakeAvailable(ImGui-SFML)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(umpk-80-emu-ui ${SOURCES})
-
-
 
 target_link_libraries(umpk-80-emu-ui PRIVATE sfml-audio sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)

@@ -26,19 +26,13 @@ class BusDeviceWritable {
 class Bus {
     public:
         void memoryWrite(uint16_t adr, uint8_t data) {
-            if ((adr < ROM_SIZE) || (adr >= MEMORY_SIZE)) return;
+            if (adr < ROM_SIZE) return;
 
-            _memory[adr] = data;
+            _memory[adr & 0x0FFF] = data;
         }
 
         uint8_t memoryRead(uint16_t adr) {
-            if (adr >= MEMORY_SIZE) {
-                // printf("%04x\n", adr);
-                throw std::logic_error(std::string("Cannot read memory from " + std::to_string(adr)).c_str());
-            }
-                
-
-            return _memory[adr];
+            return _memory[adr & 0x0FFF];
         }
 
         void loadRom(const uint8_t* buff, size_t size) {

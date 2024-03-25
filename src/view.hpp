@@ -329,11 +329,11 @@ class View : public ViewControl {
             CpuFlagsMapping flags = cpu.getFlags();
 
             bool boolFlags[5] = {
-                flags.carry,
-                flags.sign,
-                flags.zero,
-                flags.auxcarry,
-                flags.parry
+                (bool)flags.carry,
+                (bool)flags.sign,
+                (bool)flags.zero,
+                (bool)flags.auxcarry,
+                (bool)flags.parry
             };
 
             const char* labelFlags[5] = {

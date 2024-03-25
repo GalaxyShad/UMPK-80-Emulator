@@ -24,9 +24,7 @@ void Cpu::reset() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 // Machine cycles
-void Cpu::_readCommand() {
-    uint8_t opcode = _bus.read(_prgCounter);
-
+void Cpu::_readCommand(uint8_t opcode) {
     instructionFunction_t instruction = _instructions[opcode];
 
     if (instruction == nullptr) {
@@ -41,14 +39,20 @@ void Cpu::_readCommand() {
     (this->*instruction)();
 }
 
+void Cpu::_readCommand() {
+    uint8_t opcode = _bus.memoryRead(_prgCounter);
+
+    _readCommand(opcode);
+}
+
 
 void Cpu::_memoryWrite(uint8_t data) {
-    _bus.write(_regAdr, data);
+    _bus.memoryWrite(_regAdr, data);
 }
 
 
 uint8_t Cpu::_memoryRead() {
-    uint8_t data = _bus.read(_regAdr); 
+    uint8_t data = _bus.memoryRead(_regAdr); 
 
     _prgCounter++;
     _regAdr = _prgCounter;
@@ -59,18 +63,18 @@ uint8_t Cpu::_memoryRead() {
 
 void Cpu::_stackPush(uint16_t data) {
     _stackPointer--;
-    _bus.write(_stackPointer, (uint8_t)(data >> 8));
+    _bus.memoryWrite(_stackPointer, (uint8_t)(data >> 8));
 
     _stackPointer--;
-    _bus.write(_stackPointer, (uint8_t)(data));
+    _bus.memoryWrite(_stackPointer, (uint8_t)(data));
 }
 
 
 uint16_t Cpu::_stackPop() {
-    uint16_t data = _bus.read(_stackPointer);
+    uint16_t data = _bus.memoryRead(_stackPointer);
     _stackPointer++;
 
-    data = (_bus.read(_stackPointer) << 8) | data;
+    data = (_bus.memoryRead(_stackPointer) << 8) | data;
     _stackPointer++;
 
     return data;
@@ -78,19 +82,19 @@ uint16_t Cpu::_stackPop() {
 
 
 void Cpu::_portWrite(uint8_t port, uint8_t data) {
-    _bus.portWrite(port, data);
+    _bus.portOut(port, data);
 }
 
 
 uint8_t Cpu::_portRead(uint8_t port) {
-    return _bus.portRead(port);
+    return _bus.portIn(port);
 }
 
 
 // Register operations
 uint8_t Cpu::_getRegData(uint8_t regCode) {
     if (regCode == 0b110) {
-        return _bus.read(((uint16_t)_regH << 8) | _regL);
+        return _bus.memoryRead(((uint16_t)_regH << 8) | _regL);
     }
 
     return *_registers[regCode];
@@ -99,7 +103,7 @@ uint8_t Cpu::_getRegData(uint8_t regCode) {
 
 void Cpu::_setRegData(uint8_t regCode, uint8_t data) {
     if (regCode == 0b110) {
-        _bus.write(((uint16_t)_regH << 8) | _regL, data);
+        _bus.memoryWrite(((uint16_t)_regH << 8) | _regL, data);
         return;
     }
 
@@ -243,7 +247,7 @@ void Cpu::_stax() {
 
     uint16_t adr = _getRegPairData(rp);
 
-    _bus.write(adr, _regA);
+    _bus.memoryWrite(adr, _regA);
 }
 
 
@@ -252,7 +256,7 @@ void Cpu::_ldax() {
 
     uint16_t adr = _getRegPairData(rp);
 
-    _regA = _bus.read(adr);
+    _regA = _bus.memoryRead(adr);
 }
 
 
@@ -568,11 +572,11 @@ void Cpu::_xthl() {
     uint8_t h = _regH;
     uint8_t l = _regL;
 
-    _regL = _bus.read(_stackPointer);
-    _regH = _bus.read(_stackPointer+1);
+    _regL = _bus.memoryRead(_stackPointer);
+    _regH = _bus.memoryRead(_stackPointer+1);
 
-    _bus.write(_stackPointer,   l);
-    _bus.write(_stackPointer+1, h);
+    _bus.memoryWrite(_stackPointer,   l);
+    _bus.memoryWrite(_stackPointer+1, h);
 }
 
 
@@ -592,7 +596,7 @@ void Cpu::_lda() {
     uint8_t  lowAdr = _memoryRead();
     _regAdr = (_memoryRead() << 8) | lowAdr;
 
-    _regA = _bus.read(_regAdr);
+    _regA = _bus.memoryRead(_regAdr);
 }
 
 
@@ -600,16 +604,16 @@ void Cpu::_shld() {
     uint8_t  lowAdr = _memoryRead();
     uint16_t adr    = (_memoryRead() << 8) | lowAdr;
 
-    _bus.write(adr,   _regL);
-    _bus.write(adr+1, _regH);
+    _bus.memoryWrite(adr,   _regL);
+    _bus.memoryWrite(adr+1, _regH);
 }
 
 void Cpu::_lhld() { 
     uint8_t  lowAdr = _memoryRead();
     uint16_t adr    = (_memoryRead() << 8) | lowAdr;
 
-    _regL = _bus.read(adr);
-    _regH = _bus.read(adr+1);
+    _regL = _bus.memoryRead(adr);
+    _regH = _bus.memoryRead(adr+1);
 }
 
 // Jump instructions
@@ -639,25 +643,29 @@ void Cpu::_jpe()    { _jmp(_regFlag.parry);     }
 void Cpu::_jpo()    { _jmp(!_regFlag.parry);    }
 
 // Call instructions
-void Cpu::_call(bool cond) { 
-    uint8_t  lowAdr = _memoryRead();
-    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
-    
+void Cpu::_call(uint16_t adr, bool cond) {
     if (!cond) return;
 
     _stackPush(_prgCounter);
     _prgCounter = adr;
 }
 
-void Cpu::_call()   { _call(true);              }
-void Cpu::_cc()     { _call(_regFlag.carry);    }
-void Cpu::_cnc()    { _call(!_regFlag.carry);   }
-void Cpu::_cz()     { _call(_regFlag.zero);     }
-void Cpu::_cnz()    { _call(!_regFlag.zero);    }
-void Cpu::_cm()     { _call(_regFlag.sign);     }
-void Cpu::_cp()     { _call(!_regFlag.sign);    }
-void Cpu::_cpe()    { _call(_regFlag.parry);    }
-void Cpu::_cpo()    { _call(!_regFlag.parry);   }
+void Cpu::_call(bool cond) { 
+    uint8_t  lowAdr = _memoryRead();
+    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
+    
+    _call(adr, cond);
+}
+
+void Cpu::_call()   { _call(true);                  }
+void Cpu::_cc()     { _call(_regFlag.carry == 0b1); }
+void Cpu::_cnc()    { _call(_regFlag.carry == 0b0); }
+void Cpu::_cz()     { _call(_regFlag.zero  == 0b1); }
+void Cpu::_cnz()    { _call(_regFlag.zero  == 0b0); }
+void Cpu::_cm()     { _call(_regFlag.sign  == 0b1); }
+void Cpu::_cp()     { _call(_regFlag.sign  == 0b0); }
+void Cpu::_cpe()    { _call(_regFlag.parry == 0b1); }
+void Cpu::_cpo()    { _call(_regFlag.parry == 0b0); }
 
 // Return instructions 
 void Cpu::_ret(bool cond) { 

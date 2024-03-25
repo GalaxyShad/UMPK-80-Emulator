@@ -143,7 +143,7 @@ class Sfml8SegmentDigit {
         }
 
 
-        void draw(sf::RenderWindow& wnd) {
+        void draw(sf::RenderTarget& wnd) {
             for (int s = 0; s < 8; s++) {
                 wnd.draw(_parts[s]);
             }

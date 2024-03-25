@@ -19,16 +19,17 @@ class Disassembler {
         Disassembler(Bus& bus) : _bus(bus) {};
 
         std::string translate() {
-            if (_prgCounter > 0xFFFF) return "EOF"; 
+            if (_prgCounter >= 0x1000) return "EOF"; 
 
-            uint8_t opcode = _bus.read(_prgCounter);
+            uint8_t opcode = _bus.memoryRead(_prgCounter);
 
             Instruction instruction = _instructions[opcode];
 
+            instruction.name += " ";
             for (int i = 1; i < instruction.bytes; i++) {
                 char value[8];
-                sprintf(value, "%02x", _bus.read(_prgCounter+i));
-                instruction.name += " " + std::string(value);
+                sprintf(value, "%02x", _bus.memoryRead(_prgCounter + instruction.bytes-i));
+                instruction.name += std::string(value);
             }
 
             _prgCounter += instruction.bytes;
@@ -40,7 +41,12 @@ class Disassembler {
         void reset(uint16_t prgCounter) { _prgCounter = prgCounter; } 
 
         uint8_t getInstructionBytes(uint8_t opcode) { return _instructions[opcode].bytes; }
-        bool isEof() { return _prgCounter > 0xFFFF; }
+
+        std::string getInstruction(uint8_t opcode) {
+            return _instructions[opcode].name;
+        }
+
+        bool isEof() { return _prgCounter >= 0x1000; }
         
     private:
         Bus& _bus;
@@ -54,22 +60,22 @@ class Disassembler {
 
         const Instruction _instructions[256] = {
 /*       // 0x00                0x01                    0x02                    0x03                    0x04                0x05                    0x06                0x07                0x08                0x09                0x0A                    0x0B                    0x0C                0x0D                    0x0E                0x0F            //     
-/* 0x00 */  {"nop",     1},     {"lxi B,D16",   3},     {"stax B",      1},     {"inx B",       1},     {"inr B",   1},     {"dcr B",       1},     {"mvi B",   2},     {"rlc",     1},     {"UNKI",    1},     {"dad B",   1},     {"ldax B",      1},     {"dcx B",       1},     {"inr C",   1},     {"dcr C",       1},     {"mvi C",   2},     {"rrc",     1}, // 0x00
-/* 0x01 */  {"UNKI",    1},     {"lxi D,D16",   3},     {"stax D",      1},     {"inx D",       1},     {"inr D",   1},     {"dcr D",       1},     {"mvi D",   2},     {"ral",     1},     {"UNKI",    1},     {"dad D",   1},     {"ldax D",      1},     {"dcx D",       1},     {"inr E",   1},     {"dcr E",       1},     {"mvi E",   2},     {"rar",     1}, // 0x10
-/* 0x02 */  {"UNKI",    1},     {"lxi H,D16",   3},     {"shld ADR",    3},     {"inx H",       1},     {"inr H",   1},     {"dcr H",       1},     {"mvi H",   2},     {"daa",     1},     {"UNKI",    1},     {"dad H",   1},     {"lhld ADR",    3},     {"dcx H",       1},     {"inr L",   1},     {"dcr L",       1},     {"mvi L",   2},     {"cma",     1}, // 0x20
-/* 0x03 */  {"UNKI",    1},     {"lxi SP,D16",  3},     {"sta ADR",     3},     {"inx SP",      1},     {"inr M",   1},     {"dcr M",       1},     {"mvi M",   2},     {"stc",     1},     {"UNKI",    1},     {"dad SP",  1},     {"lda ADR",     3},     {"dcx SP",      1},     {"inr A",   1},     {"dcr A",       1},     {"mvi A",   2},     {"cmc",     1}, // 0x30
-/* 0x04 */  {"mov B,B", 1},     {"mov B,C",     1},     {"mov B,D",     1},     {"mov B,E",     1},     {"mov B,H", 1},     {"mov B,L",     1},     {"mov B,M", 1},     {"mov B,A", 1},     {"mov C,B", 1},     {"mov C,C", 1},     {"mov C,D",     1},     {"mov C,E",     1},     {"mov C,H", 1},     {"mov C,L",     1},     {"mov C,M", 1},     {"mov C,A", 1}, // 0x40
-/* 0x05 */  {"mov D,B", 1},     {"mov D,C",     1},     {"mov D,D",     1},     {"mov D,E",     1},     {"mov D,H", 1},     {"mov D,L",     1},     {"mov D,M", 1},     {"mov D,A", 1},     {"mov E,B", 1},     {"mov E,C", 1},     {"mov E,D",     1},     {"mov E,E",     1},     {"mov E,H", 1},     {"mov E,L",     1},     {"mov E,M", 1},     {"mov E,A", 1}, // 0x50
-/* 0x06 */  {"mov H,B", 1},     {"mov H,C",     1},     {"mov H,D",     1},     {"mov H,E",     1},     {"mov H,H", 1},     {"mov H,L",     1},     {"mov H,M", 1},     {"mov H,A", 1},     {"mov L,B", 1},     {"mov L,C", 1},     {"mov L,D",     1},     {"mov L,E",     1},     {"mov L,H", 1},     {"mov L,L",     1},     {"mov L,M", 1},     {"mov L,A", 1}, // 0x60
-/* 0x07 */  {"mov M,B", 1},     {"mov M,C",     1},     {"mov M,D",     1},     {"mov M,E",     1},     {"mov M,H", 1},     {"mov M,L",     1},     {"hlt",     1},     {"mov M,A", 1},     {"mov A,B", 1},     {"mov A,C", 1},     {"mov A,D",     1},     {"mov A,E",     1},     {"mov A,H", 1},     {"mov A,L",     1},     {"mov A,M", 1},     {"mov A,A", 1}, // 0x70
-/* 0x08 */  {"add B",   1},     {"add C",       1},     {"add D",       1},     {"add E",       1},     {"add H",   1},     {"add L",       1},     {"add M",   1},     {"add A",   1},     {"adc B",   1},     {"adc C",   1},     {"adc D",       1},     {"adc E",       1},     {"adc H",   1},     {"adc L",       1},     {"adc M",   1},     {"adc A",   1}, // 0x80
-/* 0x09 */  {"sub B",   1},     {"sub C",       1},     {"sub D",       1},     {"sub E",       1},     {"sub H",   1},     {"sub L",       1},     {"sub M",   1},     {"sub A",   1},     {"sbb B",   1},     {"sbb C",   1},     {"sbb D",       1},     {"sbb E",       1},     {"sbb H",   1},     {"sbb L",       1},     {"sbb M",   1},     {"sbb A",   1}, // 0x90
-/* 0x0A */  {"ana B",   1},     {"ana C",       1},     {"ana D",       1},     {"ana E",       1},     {"ana H",   1},     {"ana L",       1},     {"ana M",   1},     {"ana A",   1},     {"xra B",   1},     {"xra C",   1},     {"xra D",       1},     {"xra E",       1},     {"xra H",   1},     {"xra L",       1},     {"xra M",   1},     {"xra A",   1}, // 0xA0
-/* 0x0B */  {"ora B",   1},     {"ora C",       1},     {"ora D",       1},     {"ora E",       1},     {"ora H",   1},     {"ora L",       1},     {"ora M",   1},     {"ora A",   1},     {"cmp B",   1},     {"cmp C",   1},     {"cmp D",       1},     {"cmp E",       1},     {"cmp H",   1},     {"cmp L",       1},     {"cmp M",   1},     {"cmp A",   1}, // 0xB0
-/* 0x0C */  {"rnz",     1},     {"pop B",       1},     {"jnz ADR",     3},     {"jmp ADR",     3},     {"cnz ADR", 3},     {"push B",      1},     {"adi D8",  2},     {"rst 0",   1},     {"rz",      1},     {"ret",     1},     {"jz ADR",      3},     {"UNKI",        1},     {"cz ADR",  3},     {"call ADR",    3},     {"aci D8",  2},     {"rst 1",   1}, // 0xC0
-/* 0x0D */  {"rnc",     1},     {"pop D",       1},     {"jnc ADR",     3},     {"out PORT",    2},     {"cnc ADR", 3},     {"push D",      1},     {"sui D8",  2},     {"rst 2",   1},     {"rc",      1},     {"UNKI",    1},     {"jc ADR",      3},     {"in PORT",     2},     {"cc ADR",  3},     {"UNKI",        1},     {"sbi D8",  2},     {"rst 3",   1}, // 0xD0
-/* 0x0E */  {"rpo",     1},     {"pop H",       1},     {"jpo ADR",     3},     {"xthl",        1},     {"cpo ADR", 3},     {"push H",      1},     {"ani D8",  2},     {"rst 4",   1},     {"rpe",     1},     {"pchl",    1},     {"jpe ADR",     3},     {"xchg",        1},     {"cpe ADR", 3},     {"UNKI",        1},     {"xri D8",  2},     {"rst 5",   1}, // 0xE0
-/* 0x0F */  {"rp",      1},     {"pop PSW",     1},     {"jp ADR",      3},     {"di",          1},     {"cp ADR",  3},     {"push PSW",    1},     {"ori D8",  2},     {"rst 6",   1},     {"rm",      1},     {"sphl",    1},     {"jm ADR",      3},     {"ei",          1},     {"cm ADR",  3},     {"UNKI",        1},     {"cpi D8",  2},     {"rst 7",   1}, // 0xF0
+/* 0X00 */  {"NOP",     1},     {"LXI B,D16",   3},     {"STAX B",      1},     {"INX B",       1},     {"INR B",   1},     {"DCR B",       1},     {"MVI B",   2},     {"RLC",     1},     {"UNKI",    1},     {"DAD B",   1},     {"LDAX B",      1},     {"DCX B",       1},     {"INR C",   1},     {"DCR C",       1},     {"MVI C",   2},     {"RRC",     1}, // 0X00
+/* 0X01 */  {"UNKI",    1},     {"LXI D,D16",   3},     {"STAX D",      1},     {"INX D",       1},     {"INR D",   1},     {"DCR D",       1},     {"MVI D",   2},     {"RAL",     1},     {"UNKI",    1},     {"DAD D",   1},     {"LDAX D",      1},     {"DCX D",       1},     {"INR E",   1},     {"DCR E",       1},     {"MVI E",   2},     {"RAR",     1}, // 0X10
+/* 0X02 */  {"UNKI",    1},     {"LXI H,D16",   3},     {"SHLD ADR",    3},     {"INX H",       1},     {"INR H",   1},     {"DCR H",       1},     {"MVI H",   2},     {"DAA",     1},     {"UNKI",    1},     {"DAD H",   1},     {"LHLD ADR",    3},     {"DCX H",       1},     {"INR L",   1},     {"DCR L",       1},     {"MVI L",   2},     {"CMA",     1}, // 0X20
+/* 0X03 */  {"UNKI",    1},     {"LXI SP,D16",  3},     {"STA ADR",     3},     {"INX SP",      1},     {"INR M",   1},     {"DCR M",       1},     {"MVI M",   2},     {"STC",     1},     {"UNKI",    1},     {"DAD SP",  1},     {"LDA ADR",     3},     {"DCX SP",      1},     {"INR A",   1},     {"DCR A",       1},     {"MVI A",   2},     {"CMC",     1}, // 0X30
+/* 0X04 */  {"MOV B,B", 1},     {"MOV B,C",     1},     {"MOV B,D",     1},     {"MOV B,E",     1},     {"MOV B,H", 1},     {"MOV B,L",     1},     {"MOV B,M", 1},     {"MOV B,A", 1},     {"MOV C,B", 1},     {"MOV C,C", 1},     {"MOV C,D",     1},     {"MOV C,E",     1},     {"MOV C,H", 1},     {"MOV C,L",     1},     {"MOV C,M", 1},     {"MOV C,A", 1}, // 0X40
+/* 0X05 */  {"MOV D,B", 1},     {"MOV D,C",     1},     {"MOV D,D",     1},     {"MOV D,E",     1},     {"MOV D,H", 1},     {"MOV D,L",     1},     {"MOV D,M", 1},     {"MOV D,A", 1},     {"MOV E,B", 1},     {"MOV E,C", 1},     {"MOV E,D",     1},     {"MOV E,E",     1},     {"MOV E,H", 1},     {"MOV E,L",     1},     {"MOV E,M", 1},     {"MOV E,A", 1}, // 0X50
+/* 0X06 */  {"MOV H,B", 1},     {"MOV H,C",     1},     {"MOV H,D",     1},     {"MOV H,E",     1},     {"MOV H,H", 1},     {"MOV H,L",     1},     {"MOV H,M", 1},     {"MOV H,A", 1},     {"MOV L,B", 1},     {"MOV L,C", 1},     {"MOV L,D",     1},     {"MOV L,E",     1},     {"MOV L,H", 1},     {"MOV L,L",     1},     {"MOV L,M", 1},     {"MOV L,A", 1}, // 0X60
+/* 0X07 */  {"MOV M,B", 1},     {"MOV M,C",     1},     {"MOV M,D",     1},     {"MOV M,E",     1},     {"MOV M,H", 1},     {"MOV M,L",     1},     {"HLT",     1},     {"MOV M,A", 1},     {"MOV A,B", 1},     {"MOV A,C", 1},     {"MOV A,D",     1},     {"MOV A,E",     1},     {"MOV A,H", 1},     {"MOV A,L",     1},     {"MOV A,M", 1},     {"MOV A,A", 1}, // 0X70
+/* 0X08 */  {"ADD B",   1},     {"ADD C",       1},     {"ADD D",       1},     {"ADD E",       1},     {"ADD H",   1},     {"ADD L",       1},     {"ADD M",   1},     {"ADD A",   1},     {"ADC B",   1},     {"ADC C",   1},     {"ADC D",       1},     {"ADC E",       1},     {"ADC H",   1},     {"ADC L",       1},     {"ADC M",   1},     {"ADC A",   1}, // 0X80
+/* 0X09 */  {"SUB B",   1},     {"SUB C",       1},     {"SUB D",       1},     {"SUB E",       1},     {"SUB H",   1},     {"SUB L",       1},     {"SUB M",   1},     {"SUB A",   1},     {"SBB B",   1},     {"SBB C",   1},     {"SBB D",       1},     {"SBB E",       1},     {"SBB H",   1},     {"SBB L",       1},     {"SBB M",   1},     {"SBB A",   1}, // 0X90
+/* 0X0A */  {"ANA B",   1},     {"ANA C",       1},     {"ANA D",       1},     {"ANA E",       1},     {"ANA H",   1},     {"ANA L",       1},     {"ANA M",   1},     {"ANA A",   1},     {"XRA B",   1},     {"XRA C",   1},     {"XRA D",       1},     {"XRA E",       1},     {"XRA H",   1},     {"XRA L",       1},     {"XRA M",   1},     {"XRA A",   1}, // 0XA0
+/* 0X0B */  {"ORA B",   1},     {"ORA C",       1},     {"ORA D",       1},     {"ORA E",       1},     {"ORA H",   1},     {"ORA L",       1},     {"ORA M",   1},     {"ORA A",   1},     {"CMP B",   1},     {"CMP C",   1},     {"CMP D",       1},     {"CMP E",       1},     {"CMP H",   1},     {"CMP L",       1},     {"CMP M",   1},     {"CMP A",   1}, // 0XB0
+/* 0X0C */  {"RNZ",     1},     {"POP B",       1},     {"JNZ ADR",     3},     {"JMP ADR",     3},     {"CNZ ADR", 3},     {"PUSH B",      1},     {"ADI D8",  2},     {"RST 0",   1},     {"RZ",      1},     {"RET",     1},     {"JZ ADR",      3},     {"UNKI",        1},     {"CZ ADR",  3},     {"CALL ADR",    3},     {"ACI D8",  2},     {"RST 1",   1}, // 0XC0
+/* 0X0D */  {"RNC",     1},     {"POP D",       1},     {"JNC ADR",     3},     {"OUT PORT",    2},     {"CNC ADR", 3},     {"PUSH D",      1},     {"SUI D8",  2},     {"RST 2",   1},     {"RC",      1},     {"UNKI",    1},     {"JC ADR",      3},     {"IN PORT",     2},     {"CC ADR",  3},     {"UNKI",        1},     {"SBI D8",  2},     {"RST 3",   1}, // 0XD0
+/* 0X0E */  {"RPO",     1},     {"POP H",       1},     {"JPO ADR",     3},     {"XTHL",        1},     {"CPO ADR", 3},     {"PUSH H",      1},     {"ANI D8",  2},     {"RST 4",   1},     {"RPE",     1},     {"PCHL",    1},     {"JPE ADR",     3},     {"XCHG",        1},     {"CPE ADR", 3},     {"UNKI",        1},     {"XRI D8",  2},     {"RST 5",   1}, // 0XE0
+/* 0X0F */  {"RP",      1},     {"POP PSW",     1},     {"JP ADR",      3},     {"DI",          1},     {"CP ADR",  3},     {"PUSH PSW",    1},     {"ORI D8",  2},     {"RST 6",   1},     {"RM",      1},     {"SPHL",    1},     {"JM ADR",      3},     {"EI",          1},     {"CM ADR",  3},     {"UNKI",        1},     {"CPI D8",  2},     {"RST 7",   1}, // 0XF0
         //  0x00                0x01                    0x02                    0x03                    0x04                0x05                    0x06                0x07                0x08                0x09                0x0A                    0x0B                    0x0C                0x0D                    0x0E                0x0F            //   
         };
 };

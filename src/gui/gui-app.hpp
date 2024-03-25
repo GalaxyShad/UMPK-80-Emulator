@@ -50,6 +50,8 @@ public:
         m_components.push_back(std::make_pair("RAM", new UiRam(m_controller)));
 
         m_components.push_back(std::make_pair("Cpu Control", new UiCpuControl(m_controller)));
+
+        m_components.push_back(std::make_pair("Stack", new UiStack(m_controller)));
     }
 
     virtual ~GuiApp() {

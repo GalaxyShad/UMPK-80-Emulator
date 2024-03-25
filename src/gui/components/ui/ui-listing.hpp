@@ -180,4 +180,70 @@ private:
     UiMemoryDisassembler m_uiDisassembler;
 };
 
+class UiStack : public IRenderable {
+public:
+    UiStack(Controller &controller)
+        : m_controller(controller) {}
+
+    void render() override {
+        if (ImGui::BeginTable("Stack", 2,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollX |
+                                  ImGuiTableFlags_ScrollY |
+                                  ImGuiTableFlags_SizingFixedFit)
+        ) {
+            ImGui::TableSetupColumn("Address");
+            ImGui::TableSetupColumn("Value");
+
+            ImGui::TableHeadersRow();
+
+            ImGuiStyle &style = ImGui::GetStyle();
+
+            const uint8_t* rom = m_controller.getRom();
+            int stackPointer = m_controller.umpk().getCpu().getStackPointer();
+
+            constexpr uint16_t stackHigh = 0x0BD0;
+            constexpr uint16_t stackLow  = 0x0B00;
+
+            for (int addr = stackHigh; addr >= stackLow; addr--) {
+                int row = stackHigh - addr;
+                auto color = (stackPointer == addr)
+                             ? style.Colors[ImGuiCol_ButtonHovered]
+                             : style.Colors[ImGuiCol_Text];
+
+                ImGui::TableNextRow();
+
+                ImGui::TableSetBgColor(
+                    ImGuiTableBgTarget_CellBg,
+                    ImColor(ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg]),
+                    0);
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(color, "%04X", addr);
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextColored(color, "%02X", rom[addr]);
+
+                if (stackPointer == addr) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(style.Colors[ImGuiCol_ButtonHovered], " <- SP");
+                }
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Separator();
+
+        ImGui::Text("Stack Pointer:");
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%04X", m_controller.umpk().getCpu().getStackPointer());
+
+        ImGui::Spacing();
+    }
+
+private:
+    Controller& m_controller;
+};
+
 #endif // UI_LISTING_HPP

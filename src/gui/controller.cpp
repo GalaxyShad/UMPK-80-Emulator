@@ -122,7 +122,6 @@ void Controller::loadProgramToMemory(uint16_t position,
     for (size_t i = 0; i < program.size(); i++) {
         _umpk.getBus().memoryWrite(position + i, program[i]);
     }
-    _umpk.getCpu().interruptRst(7);
     _umpkMutex.unlock();
 }
 
@@ -142,6 +141,11 @@ void Controller::_handleHooks(Cpu &cpu) {
 
     const uint16_t SOUND_FUNC_ADR = 0x0447;
     const uint16_t DELAY_FUNC_ADR = 0x0506;
+    const uint16_t START_END_ADR  = 0x00C5;
+
+    if (pgCounter == START_END_ADR) {
+        _gui.onUmpkOsStartupFinished();
+    }
 
     if (pgCounter == SOUND_FUNC_ADR) {
         uint8_t duration = cpu.getRegister(Cpu::Register::D);
@@ -170,9 +174,9 @@ void Controller::_umpkWork() {
 
         _umpkMutex.lock();
         _umpk.tick();
+        _umpkMutex.unlock();
 
         _handleHooks(_umpk.getCpu());
-        _umpkMutex.unlock();
 
         if (breakpoint == _umpk.getCpu().getProgramCounter())
             _isUmpkFreezed = true;

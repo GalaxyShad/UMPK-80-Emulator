@@ -1,3 +1,6 @@
+#ifndef UI_DISPLAY_DIGIT_HPP
+#define UI_DISPLAY_DIGIT_HPP
+
 #include "../../irenderable.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -170,3 +173,5 @@ private:
     sf::Vector2f m_pos;
     sf::ConvexShape m_parts[8];
 };
+
+#endif // UI_DISPLAY_DIGIT_HPP

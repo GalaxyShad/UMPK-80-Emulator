@@ -1,3 +1,6 @@
+#ifndef UI_DISPLAY_HPP
+#define UI_DISPLAY_HPP
+
 #include "../../irenderable.hpp"
 #include "ui-display-digit.hpp"
 #include "../../../controller.hpp"
@@ -44,3 +47,5 @@ private:
     Controller& m_controller;
     sf::RenderTexture rt;
 };
+
+#endif // UI_DISPLAY_HPP

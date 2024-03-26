@@ -18,10 +18,11 @@
 #include "components/ui/ui-rom.hpp"
 
 #include "controller.hpp"
+#include "gui-app-base.hpp"
 
-class GuiApp {
+class GuiApp : public GuiAppBase {
 public:
-    GuiApp() : m_components(), m_controller(*this) {
+    GuiApp() : m_controller(*this) {
         m_window.create(sf::VideoMode(1280, 720), "UMPK-80 Emulator");
         ImGui::SFML::Init(m_window);
 
@@ -30,27 +31,15 @@ public:
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         m_components.push_back(std::make_pair("CMD Table", new UiCmdTable(m_controller)));
-
-        m_components.push_back(
-            std::make_pair("Display", new UiDisplay(m_controller)));
-
-        m_components.push_back(
-            std::make_pair("Keyboard", new UiKeyboard(m_controller)));
-
-        m_components.push_back(
-            std::make_pair("Listing", new UiOsListing(m_controller)));
-
+        m_components.push_back(std::make_pair("Display", new UiDisplay(m_controller)));
+        m_components.push_back(std::make_pair("Keyboard", new UiKeyboard(m_controller)));
+        m_components.push_back(std::make_pair("Listing", new UiOsListing(m_controller)));
         m_components.push_back(std::make_pair("IO", new UiIoRegister(m_controller)));
-
         m_components.push_back(std::make_pair("Disassembler", new UiDecompilerWindow(m_controller)));
-
         m_components.push_back(std::make_pair("Program Loader", new UiProgramLoader(m_controller)));
-
         m_components.push_back(std::make_pair("ROM", new UiRom(m_controller)));
         m_components.push_back(std::make_pair("RAM", new UiRam(m_controller)));
-
         m_components.push_back(std::make_pair("Cpu Control", new UiCpuControl(m_controller)));
-
         m_components.push_back(std::make_pair("Stack", new UiStack(m_controller)));
     }
 

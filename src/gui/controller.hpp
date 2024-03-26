@@ -13,6 +13,8 @@
 #include "../core/dj.hpp"
 #include "../core/umpk80.hpp"
 
+#include "gui-app-base.hpp"
+
 #ifdef EMULATE_OLD_UMPK
 #define OS_FILE "./data/old.bin"
 #else
@@ -24,8 +26,8 @@ public:
     const uint16_t UMPK_ROM_SIZE = 0x800;
 
 public:
-    Controller(class GuiApp &gui)
-        : _umpkThread(&Controller::_umpkWork, this), _disasm(nullptr, 0) {}
+    Controller(GuiAppBase& gui)
+        : _umpkThread(&Controller::_umpkWork, this), _disasm(nullptr, 0), _gui(gui) {}
 
     ~Controller() {
         _umpkMutex.lock();
@@ -92,6 +94,8 @@ public:
     int breakpoint = -1;
 
 private:
+    GuiAppBase& _gui;
+
     Umpk80 _umpk;
     Disassembler _disasm;
     Dj dj;

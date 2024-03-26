@@ -1,3 +1,6 @@
+#ifndef UI_ROM_HPP
+#define UI_ROM_HPP
+
 #include "../irenderable.hpp"
 
 #include <imgui.h>
@@ -44,3 +47,5 @@ private:
     Controller& m_controller;
     ImGuiMemoryEditor m_imGuiMemoryEditor;
 };
+
+#endif // UI_ROM_HPP

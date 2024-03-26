@@ -95,7 +95,6 @@ private:
     RegisterDevice _register5Out;
 
     RegisterControlStep _registerStepExec;
-
 public:
 #ifdef EMULATE_OLD_UMPK
     const uint8_t PORT_SPEAKER = 0x04;

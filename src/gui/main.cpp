@@ -1,4 +1,5 @@
 #include "gui-app.hpp"
+#include "gui-app-compact.hpp"
 #include "../core/cpu.hpp"
 #include "../core/bus.hpp"
 #include <cstdint>
@@ -58,12 +59,21 @@ void runTestDAA() {
     test(runDaa(0x88, 0x44), 0x32);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 #ifdef DEBUG
     runTestDAA();
 #endif
+    GuiAppBase* app = nullptr;
 
-    GuiApp app;
-    app.start();
+    if (argc > 1) {
+        app = new GuiAppCompact(argv[1]);
+    } else {
+        app = new GuiApp();
+    }
+
+    app->start();
+
+    delete app;
+
     return 0;
 }

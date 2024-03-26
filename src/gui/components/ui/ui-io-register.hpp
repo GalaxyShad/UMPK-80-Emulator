@@ -35,7 +35,7 @@ public:
         for (int i = 0; i < 8; i++) {
             if (ImGui::Checkbox(("##i" + std::to_string(7 - i)).c_str(),
                                 &vecIn[i])) {
-                m_controller.port5In(inData);
+                m_controller.port5In(vecToUint8(vecIn));
             }
 
             ImGui::SameLine();

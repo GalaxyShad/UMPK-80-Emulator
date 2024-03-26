@@ -59,9 +59,15 @@ private:
                     case 3: m_controller.onBtnReset(); break;
                 }
             }
-            
+
             ImGui::SameLine();
         }   
+
+        ImGui::NewLine();
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
     }
 
     void renderRegisters() {
@@ -184,6 +190,9 @@ private:
                 m_controller.setCpuProgramCounter(m_programCounter);
             }
         }
+
+        m_stackPointer = cpu.getStackPointer();
+
         ImGui::TableSetColumnIndex(1);
         if (m_controller.isUmpkRunning()) {
             ImGui::Text("%04X", m_stackPointer);

@@ -1,7 +1,6 @@
 #ifndef UI_KEYBOARD_HPP
 #define UI_KEYBOARD_HPP
 
-#include <functional>
 #include <imgui.h>
 #include <utility>
 #include <string>
@@ -9,7 +8,6 @@
 
 #include "../irenderable.hpp"
 #include "../../controller.hpp"
-#include "SFML/Window/Keyboard.hpp"
 
 class UiKeyboard : public IRenderable {
 public:
@@ -52,35 +50,30 @@ private:
         { KeyboardKey::P,  KeyboardKey::UM,    KeyboardKey::ZP_UV, KeyboardKey::_0, KeyboardKey::_1, KeyboardKey::_2, KeyboardKey::_3  }
     };
 
-    const std::map<sf::Keyboard::Key, KeyboardKey> m_realKeysMapping{
-        {sf::Keyboard::Num0, KeyboardKey::_0},
-        {sf::Keyboard::Num1, KeyboardKey::_1},
-        {sf::Keyboard::Num2, KeyboardKey::_2},
-        {sf::Keyboard::Num3, KeyboardKey::_3},
-        {sf::Keyboard::Num4, KeyboardKey::_4},
-        {sf::Keyboard::Num5, KeyboardKey::_5},
-        {sf::Keyboard::Num6, KeyboardKey::_6},
-        {sf::Keyboard::Num7, KeyboardKey::_7},
-        {sf::Keyboard::Num8, KeyboardKey::_8},
-        {sf::Keyboard::Num9, KeyboardKey::_9},
-        {sf::Keyboard::A, KeyboardKey::_A},
-        {sf::Keyboard::B, KeyboardKey::_B},
-        {sf::Keyboard::C, KeyboardKey::_C},
-        {sf::Keyboard::D, KeyboardKey::_D},
-        {sf::Keyboard::E, KeyboardKey::_E},
-        {sf::Keyboard::F, KeyboardKey::_F},
+    const std::map<ImGuiKey, KeyboardKey> m_realKeysMapping{
+        {ImGuiKey_0, KeyboardKey::_0},
+        {ImGuiKey_1, KeyboardKey::_1},
+        {ImGuiKey_2, KeyboardKey::_2},
+        {ImGuiKey_3, KeyboardKey::_3},
+        {ImGuiKey_4, KeyboardKey::_4},
+        {ImGuiKey_5, KeyboardKey::_5},
+        {ImGuiKey_6, KeyboardKey::_6},
+        {ImGuiKey_7, KeyboardKey::_7},
+        {ImGuiKey_8, KeyboardKey::_8},
+        {ImGuiKey_9, KeyboardKey::_9},
+        {ImGuiKey_A, KeyboardKey::_A},
+        {ImGuiKey_B, KeyboardKey::_B},
+        {ImGuiKey_C, KeyboardKey::_C},
+        {ImGuiKey_D, KeyboardKey::_D},
+        {ImGuiKey_E, KeyboardKey::_E},
+        {ImGuiKey_F, KeyboardKey::_F},
 
-        {sf::Keyboard::Enter, KeyboardKey::P},
-        {sf::Keyboard::Space, KeyboardKey::OT_A},
-        {sf::Keyboard::Backspace, KeyboardKey::UM},
+        {ImGuiKey_Space, KeyboardKey::OT_A},
 
-        {sf::Keyboard::Right, KeyboardKey::ZP_UV},
-        {sf::Keyboard::Left, KeyboardKey::UM},
-        {sf::Keyboard::Up, KeyboardKey::P},
-        {sf::Keyboard::Down, KeyboardKey::ST},
-
-        {sf::Keyboard::F5, KeyboardKey::P},
-        {sf::Keyboard::F2, KeyboardKey::R},
+        {ImGuiKey_RightArrow, KeyboardKey::ZP_UV},
+        {ImGuiKey_LeftArrow, KeyboardKey::UM},
+        {ImGuiKey_UpArrow, KeyboardKey::P},
+        {ImGuiKey_DownArrow, KeyboardKey::ST},
     };
 
     void uiHandler() {
@@ -91,7 +84,15 @@ private:
                 bool isEmpty = (i < 2 && j == 0);
 
                 if (!isEmpty) {
+                    if (m_extKeysState[(int)m_keyMap[i][j]]) {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+                    }
+
                     ImGui::Button(keyLabel, ImVec2(32.0f, 32.0f));
+
+                    if (m_extKeysState[(int)m_keyMap[i][j]]) {
+                        ImGui::PopStyleColor();
+                    }
 
                     m_uiKeysState[(int)m_keyMap[i][j]] = ImGui::IsItemActive();
 
@@ -102,16 +103,17 @@ private:
 
                 if (j == 2)
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
-
-                
             }
             ImGui::NewLine();
         }
     }
 
     void realKeyboardHandler() {
+        if (ImGui::IsWindowFocused() == false)
+            return;
+
         for (const auto& kv : m_realKeysMapping) {
-            m_extKeysState[(int)kv.second] = sf::Keyboard::isKeyPressed(kv.first);
+            m_extKeysState[(int)kv.second] = ImGui::IsKeyDown(kv.first);
         }
     }
 };

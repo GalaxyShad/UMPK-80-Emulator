@@ -131,6 +131,22 @@ private:
         m_window.clear();
         ImGui::SFML::Render(m_window);
         m_window.display();
+
+        if (ImGui::IsKeyPressed(ImGuiKey_F2)) {
+            m_controller.onBtnReset();
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_F5)) {
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftShift) || ImGui::IsKeyPressed(ImGuiKey_RightShift)) {
+                m_controller.onButtonStop();
+            } else {
+                m_controller.onBtnStart();
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_F10)) {
+            m_controller.onBtnNextCommand();
+        }
     }
 
     void handleEvents() {

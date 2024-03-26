@@ -34,9 +34,9 @@ public:
     uint8_t port5OutGet() { return _register5Out.busPortRead(); }
 
     void tick() {
-        if (!_registerStepExec.isStepExec())
+        if (!_registerStepExec.isStepExec()) {
             _intel8080.tick();
-        else {
+        } else {
             _intel8080.tick(); // 0bd7 NOP
             _intel8080.tick(); // 0bd8 JMP USER
             _intel8080.tick(); // USER INST

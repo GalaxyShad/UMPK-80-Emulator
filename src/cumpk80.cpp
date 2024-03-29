@@ -76,3 +76,11 @@ uint8_t UMPK80_DisplayGetDigit(UMPK80_t umpk, int digit) {
 void UMPK80_LoadOS(UMPK80_t umpk, const uint8_t* os) {
     inst(umpk)->loadOS(os);
 }
+
+uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk) {
+    return inst(umpk)->getCpu().getProgramCounter();
+}
+
+uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk) {
+    return inst(umpk)->getCpu().getStackPointer();
+}

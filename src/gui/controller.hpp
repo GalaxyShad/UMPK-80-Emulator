@@ -18,7 +18,7 @@
 #ifdef EMULATE_OLD_UMPK
 #define OS_FILE "./data/old.bin"
 #else
-#define OS_FILE "./data/scaned-os.bin"
+#define OS_FILE "./data/scaned-os-fixed.bin"
 #endif
 
 class Controller {

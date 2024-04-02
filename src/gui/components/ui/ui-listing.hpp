@@ -166,10 +166,11 @@ public:
         : m_controller(controller)
         , m_uiDisassembler(&m_cursorpos, &m_controller.breakpoint)
     {
-        m_uiDisassembler.disassemble(m_controller.getRom(), m_controller.UMPK_ROM_SIZE);
+        m_uiDisassembler.disassemble(m_controller.getRom(), 0x1000);
     }
 
     void render() override {
+        m_uiDisassembler.disassemble(m_controller.getRom(), 0x1000);
         m_cursorpos = m_controller.umpk().getCpu().getProgramCounter();
         m_uiDisassembler.render();
     }

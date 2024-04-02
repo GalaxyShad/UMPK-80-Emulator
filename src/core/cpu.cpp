@@ -58,20 +58,14 @@ uint8_t Cpu::_memoryRead() {
 
 
 void Cpu::_stackPush(uint16_t data) {
-    _stackPointer--;
-    _bus.memoryWrite(_stackPointer, (uint8_t)(data >> 8));
-
-    _stackPointer--;
-    _bus.memoryWrite(_stackPointer, (uint8_t)(data));
+    _bus.memoryWrite(--_stackPointer, (uint8_t)((data >> 8) & 0xFF));
+    _bus.memoryWrite(--_stackPointer, (uint8_t)(data & 0xFF));
 }
 
 
 uint16_t Cpu::_stackPop() {
-    uint16_t data = _bus.memoryRead(_stackPointer);
-    _stackPointer++;
-
-    data = (_bus.memoryRead(_stackPointer) << 8) | data;
-    _stackPointer++;
+    uint16_t data = _bus.memoryRead(_stackPointer++);
+    data = (_bus.memoryRead(_stackPointer++) << 8) | data;
 
     return data;
 }
@@ -149,7 +143,7 @@ void Cpu::_updateFlagsState(uint16_t result) {
     _regFlag.sign       = (data >> 7) & 0b1;
 
     //https://retrocomputing.stackexchange.com/questions/11262/can-someone-explain-this-algorithm-used-to-compute-the-auxiliary-carry-flag
-    _regFlag.auxcarry   = (data & 0x0F) > 0x09;
+    _regFlag.auxcarry   = ((data & 0x0F) > 0x09) & 0b1;
    
     uint8_t p = data;
     p ^= p >> 4;

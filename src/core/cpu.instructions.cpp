@@ -337,7 +337,7 @@ void Cpu::_push() {
         psw |= _regFlag.parity   << 2;
         psw |= _regFlag.carry;
 
-        uint16_t af =  (_regA << 8) | psw;
+        uint16_t af =  ((uint16_t)_regA << 8) | psw;
 
         _stackPush(af);
 
@@ -379,7 +379,7 @@ void Cpu::_dad() {
 
     uint32_t res  = data + hl;
 
-    _regFlag.carry = res & 0xFFFF0000;
+    _regFlag.carry = ((res & 0xFFFF0000) != false) & 0b1;
 
     _setRegPairData(0b10, (uint16_t)res);
 }
@@ -452,7 +452,7 @@ void Cpu::_lda() {
 
 void Cpu::_shld() { 
     uint8_t  lowAdr = _memoryRead();
-    uint16_t adr    = (_memoryRead() << 8) | lowAdr;
+    uint16_t adr    = ((uint16_t)_memoryRead() << 8) | lowAdr;
 
     _bus.memoryWrite(adr,   _regL);
     _bus.memoryWrite(adr+1, _regH);

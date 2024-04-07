@@ -21,6 +21,8 @@ extern "C" {
     uint8_t UMPK80_DisplayGetDigit(UMPK80_t umpk, int digit);
     void    UMPK80_LoadOS(UMPK80_t umpk, const uint8_t* os);
 
+    void    UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress);
+
     uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk);
     uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk);
 }
@@ -83,4 +85,8 @@ uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk) {
 
 uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk) {
     return inst(umpk)->getCpu().getStackPointer();
+}
+
+void UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress) {
+    inst(umpk)->getBus().loadRam(program + dstAddress, programSize);
 }

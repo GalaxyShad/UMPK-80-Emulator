@@ -22,11 +22,32 @@ private:
 };
 
 class Umpk80 {
+private:
+    const uint16_t SAVPC = 0x0BDC;
 public:
     Umpk80()
         : _intel8080(_bus), _keyboard(_registerScan), _registerScan(_display) {
         _bindDevices();
     }
+
+    enum class Register {
+        PC_LOW, PC_HIGH,
+        SP_LOW, SP_HIGH,
+        L,   H,
+        E,   D,
+        C,   B,
+        PSW, A,
+        M
+    };
+
+    enum class RegisterPair {
+        PC,
+        SP,
+        HL,
+        DE,
+        BC,
+        PSWA,
+    };
 
     void port5InSet(uint8_t data) { _register5In.busPortWrite(data); }
     uint8_t port5InGet() { return _register5In.busPortRead(); }
@@ -79,6 +100,39 @@ public:
     uint8_t getDisplayDigit(int digit) { return _display.get(digit); }
 
     void loadOS(const uint8_t *os) { _bus.loadRom(os, UMPK80_OS_SIZE); }
+
+    uint16_t getRegisterPair(RegisterPair regPair) {
+        uint8_t low  = _bus.memoryRead(SAVPC + (uint16_t)regPair * 2);
+        uint8_t high = _bus.memoryRead(SAVPC + (uint16_t)regPair * 2 + 1);
+
+        return ((uint16_t)high << 8) | low;
+    }
+
+    void setRegisterPair(RegisterPair regPair, uint16_t value) {
+        uint8_t adrlow  = SAVPC + (uint16_t)regPair * 2;
+        uint8_t adrhigh = SAVPC + (uint16_t)regPair * 2 + 1;
+
+        _bus.memoryWrite(adrlow,  value & 0xFF);
+        _bus.memoryWrite(adrhigh, (value >> 8) & 0xFF);
+    }
+
+    uint8_t getRegister(Register reg) {
+        if (reg == Register::M) {
+            uint16_t hl = getRegisterPair(RegisterPair::HL);
+            return _bus.memoryRead(hl);
+        }
+
+        return _bus.memoryRead(SAVPC + (uint16_t)reg);
+    }
+
+    void setRegister(Register reg, uint8_t value) {
+        if (reg == Register::M) {
+            // TODO Handle it somehow?
+            return;
+        }
+
+        _bus.memoryWrite(SAVPC, value);
+    }
 
     Cpu &getCpu() { return _intel8080; }
     Bus &getBus() { return _bus; }

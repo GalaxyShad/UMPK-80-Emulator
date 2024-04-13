@@ -2,7 +2,28 @@
 
 typedef void* UMPK80_t;
 
+#include "core/umpk80.hpp"
+
 extern "C" {
+    enum UMPK80_Register {
+        PC_LOW, PC_HIGH,
+        SP_LOW, SP_HIGH,
+        L,   H,
+        E,   D,
+        C,   B,
+        PSW, A,
+        M
+    };
+
+    enum UMPK80_RegisterPair {
+        PC,
+        SP,
+        HL,
+        DE,
+        BC,
+        PSWA,
+    };
+
     UMPK80_t UMPK80_Create();
     void     UMPK80_Free(UMPK80_t umpk);
 
@@ -25,9 +46,14 @@ extern "C" {
 
     uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk);
     uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk);
+
+    uint8_t UMPK80_GetRegister(UMPK80_t umpk, UMPK80_Register reg);
+    void    UMPK80_SetRegister(UMPK80_t umpk, UMPK80_Register reg, uint8_t value);
+
+    uint8_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair);
+    void    UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value);
 }
 
-#include "core/umpk80.hpp"
 
 UMPK80_t UMPK80_Create() {
     return new Umpk80();
@@ -85,6 +111,22 @@ uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk) {
 
 uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk) {
     return inst(umpk)->getCpu().getStackPointer();
+}
+
+uint8_t UMPK80_GetRegister(UMPK80_t umpk, UMPK80_Register reg) {
+    return inst(umpk)->getRegister((Umpk80::Register)reg);
+}
+
+void UMPK80_SetRegister(UMPK80_t umpk, UMPK80_Register reg, uint8_t value) {
+    inst(umpk)->setRegister((Umpk80::Register)reg, value);
+}
+
+uint8_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair) {
+    return inst(umpk)->getRegisterPair((Umpk80::RegisterPair)regPair);
+}
+
+void UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value) {
+    inst(umpk)->setRegisterPair((Umpk80::RegisterPair)regPair, value);
 }
 
 void UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress) {

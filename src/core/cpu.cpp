@@ -80,6 +80,29 @@ uint8_t Cpu::_portRead(uint8_t port) {
     return _bus.portIn(port);
 }
 
+uint8_t Cpu::_packPsw(CpuFlagsMapping flags) const {
+    uint8_t psw = 0b00000010;
+
+    psw |= flags.sign     << 7;
+    psw |= flags.zero     << 6;
+    psw |= flags.auxcarry << 4;
+    psw |= flags.parity   << 2;
+    psw |= flags.carry;
+
+    return psw;
+}
+
+CpuFlagsMapping Cpu::_unpackPsw(uint8_t psw) const {
+    CpuFlagsMapping flags;
+    
+    flags.sign     = (psw & 0b10000000) != 0;
+    flags.zero     = (psw & 0b01000000) != 0;
+    flags.auxcarry = (psw & 0b00010000) != 0;
+    flags.parity   = (psw & 0b00000100) != 0;
+    flags.carry    = (psw & 0b00000001) != 0;
+
+    return flags;
+}
 
 // Register operations
 uint8_t Cpu::_getRegData(uint8_t regCode) const {

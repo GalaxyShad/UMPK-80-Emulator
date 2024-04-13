@@ -35,6 +35,7 @@ public:
     uint16_t getProgramCounter() const       { return _prgCounter; }
     void     setProgramCounter(uint16_t adr) { _prgCounter = adr;  };
 
+    uint8_t         getRegisterFlags() const        { return _packPsw(_regFlag); } 
     CpuFlagsMapping getFlags() const                { return _regFlag;  }
     void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
 
@@ -126,6 +127,8 @@ private:
     void        _portWrite(uint8_t port, uint8_t data);
     uint8_t     _portRead(uint8_t port);
 
+    uint8_t         _packPsw(CpuFlagsMapping flags) const;
+    CpuFlagsMapping _unpackPsw(uint8_t psw) const;
 
     // Register operations
     uint8_t     _getRegData(uint8_t regCode) const;

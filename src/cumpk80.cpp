@@ -45,7 +45,9 @@ extern "C" {
     void    UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress);
 
     uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk);
+    void     UMPK80_CpuSetProgramCounter(UMPK80_t umpk, uint16_t value);
     uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk);
+    uint8_t  UMPK80_CpuGetRegister(UMPK80_t umpk, UMPK80_Register reg);
 
     uint8_t UMPK80_GetRegister(UMPK80_t umpk, UMPK80_Register reg);
     void    UMPK80_SetRegister(UMPK80_t umpk, UMPK80_Register reg, uint8_t value);
@@ -109,8 +111,32 @@ uint16_t UMPK80_CpuProgramCounter(UMPK80_t umpk) {
     return inst(umpk)->getCpu().getProgramCounter();
 }
 
+void UMPK80_CpuSetProgramCounter(UMPK80_t umpk, uint16_t value) {
+    inst(umpk)->getCpu().setProgramCounter(value);    
+}
+
 uint16_t UMPK80_CpuStackPointer(UMPK80_t umpk) {
     return inst(umpk)->getCpu().getStackPointer();
+}
+
+uint8_t  UMPK80_CpuGetRegister(UMPK80_t umpk, UMPK80_Register reg) {
+    auto& cpu = inst(umpk)->getCpu();
+    
+    switch (reg) {
+        case PC_LOW:  return (cpu.getProgramCounter() & 0xFF);
+        case PC_HIGH: return (cpu.getProgramCounter() >> 8) & 0xFF;
+        case SP_LOW:  return (cpu.getStackPointer() & 0xFF);
+        case SP_HIGH: return (cpu.getStackPointer() >> 8) & 0xFF;
+        case L:       return cpu.L();
+        case H:       return cpu.H();
+        case E:       return cpu.E();
+        case D:       return cpu.D();
+        case C:       return cpu.C();
+        case B:       return cpu.B();
+        case A:       return cpu.A(); 
+        case PSW:     return cpu.getRegisterFlags();
+        case M:       return cpu.getRegister(Cpu::Register::M);
+    }
 }
 
 uint8_t UMPK80_GetRegister(UMPK80_t umpk, UMPK80_Register reg) {

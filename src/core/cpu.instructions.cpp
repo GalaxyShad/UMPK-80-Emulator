@@ -329,13 +329,7 @@ void Cpu::_push() {
 
     // Flags and A store
     if (regPairCode == 0b11) {
-        uint8_t psw = 0b00000010;
-
-        psw |= _regFlag.sign     << 7;
-        psw |= _regFlag.zero     << 6;
-        psw |= _regFlag.auxcarry << 4;
-        psw |= _regFlag.parity   << 2;
-        psw |= _regFlag.carry;
+        uint8_t psw = _packPsw(_regFlag);
 
         uint16_t af =  ((uint16_t)_regA << 8) | psw;
 
@@ -356,11 +350,7 @@ void Cpu::_pop() {
 
     // Flags and A read
     if (regPairCode == 0b11) {
-        _regFlag.sign     = (apsw & 0b10000000) != 0;
-        _regFlag.zero     = (apsw & 0b01000000) != 0;
-        _regFlag.auxcarry = (apsw & 0b00010000) != 0;
-        _regFlag.parity   = (apsw & 0b00000100) != 0;
-        _regFlag.carry    = (apsw & 0b00000001) != 0;
+        _regFlag = _unpackPsw(apsw & 0xFF);
 
         _regA = apsw >> 8;
 

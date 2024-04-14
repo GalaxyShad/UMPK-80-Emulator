@@ -109,8 +109,8 @@ public:
     }
 
     void setRegisterPair(RegisterPair regPair, uint16_t value) {
-        uint8_t adrlow  = SAVPC + (uint16_t)regPair * 2;
-        uint8_t adrhigh = SAVPC + (uint16_t)regPair * 2 + 1;
+        uint16_t adrlow  = SAVPC + (uint16_t)regPair * 2;
+        uint16_t adrhigh = SAVPC + (uint16_t)regPair * 2 + 1;
 
         _bus.memoryWrite(adrlow,  value & 0xFF);
         _bus.memoryWrite(adrhigh, (value >> 8) & 0xFF);
@@ -131,7 +131,7 @@ public:
             return;
         }
 
-        _bus.memoryWrite(SAVPC, value);
+        _bus.memoryWrite(SAVPC + (uint16_t)reg, value);
     }
 
     Cpu &getCpu() { return _intel8080; }

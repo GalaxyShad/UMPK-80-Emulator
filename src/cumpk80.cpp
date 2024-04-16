@@ -52,8 +52,8 @@ extern "C" {
     uint8_t UMPK80_GetRegister(UMPK80_t umpk, UMPK80_Register reg);
     void    UMPK80_SetRegister(UMPK80_t umpk, UMPK80_Register reg, uint8_t value);
 
-    uint8_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair);
-    void    UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value);
+    uint16_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair);
+    void     UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value);
 }
 
 
@@ -147,7 +147,7 @@ void UMPK80_SetRegister(UMPK80_t umpk, UMPK80_Register reg, uint8_t value) {
     inst(umpk)->setRegister((Umpk80::Register)reg, value);
 }
 
-uint8_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair) {
+uint16_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair) {
     return inst(umpk)->getRegisterPair((Umpk80::RegisterPair)regPair);
 }
 

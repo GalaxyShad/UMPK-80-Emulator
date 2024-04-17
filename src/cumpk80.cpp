@@ -54,6 +54,9 @@ extern "C" {
 
     uint16_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair);
     void     UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value);
+
+    uint8_t UMPK80_MemoryRead(UMPK80_t umpk, uint16_t adr);
+    void    UMPK80_MemoryWrite(UMPK80_t umpk, uint16_t adr, uint8_t data);
 }
 
 
@@ -153,6 +156,14 @@ uint16_t UMPK80_GetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair) {
 
 void UMPK80_SetRegisterPair(UMPK80_t umpk, UMPK80_RegisterPair regPair, uint16_t value) {
     inst(umpk)->setRegisterPair((Umpk80::RegisterPair)regPair, value);
+}
+
+uint8_t UMPK80_MemoryRead(UMPK80_t umpk, uint16_t adr) {
+    return inst(umpk)->getBus().memoryRead(adr);
+}
+
+void UMPK80_MemoryWrite(UMPK80_t umpk, uint16_t adr, uint8_t data) {
+    inst(umpk)->getBus().memoryWrite(adr, data);
 }
 
 void UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress) {

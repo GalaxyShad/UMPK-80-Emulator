@@ -28,7 +28,8 @@ FetchContent_Declare(ImGui-SFML
 FetchContent_MakeAvailable(ImGui-SFML)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-add_executable(umpk-80-emu-ui ${SOURCES})
+add_executable(umpk-80-emu-ui ${SOURCES}
+        src/core/utils.h)
 
 target_link_libraries(umpk-80-emu-ui PRIVATE sfml-audio sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)

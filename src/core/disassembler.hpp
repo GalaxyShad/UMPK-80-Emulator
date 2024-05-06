@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include "utils.h"
 
 class Disassembler {
 public:
@@ -12,22 +13,32 @@ public:
         const char* operand;
     };
 
-    struct Result {
+    struct DisassembleResult {
         uint16_t address;
-        std::string instruction;
         uint8_t bytesCount;
         uint8_t bytes[3];
+        const Instruction* instruction;
+        bool eof;
+
+        std::string toString() {
+            switch (bytesCount) {
+                case 1: return {instruction->mnemonic};
+                case 2: return formatedString("%s %02Xh", instruction->mnemonic, bytes[1]);
+                case 3: return formatedString("%s %02X%02Xh", instruction->mnemonic, bytes[2], bytes[1]);
+
+                default: return "-";
+            }
+        }
     };
 
-
-    static Instruction getInstruction(uint8_t opcode) {
+    static const Instruction& getInstruction(uint8_t opcode) {
         // clang-format off
         static const Instruction instructions[256] = {
-            // 0x00                 0x01                   0x02                   0x03                        0x04                       0x05                    0x06                   0x07                0x08                    0x09                    0x0A                    0x0B                        0x0C                       0x0D                            0x0E                       0x0F            //     
-/* 0X00 */  {"NOP",         1, ""}, {"LXI B,",  3, "D16"}, {"STAX B",  1, ""},    {"INX B",   1, ""},         {"INR B",   1, ""},        {"DCR B",       1, ""}, {"MVI B",   2, ""},    {"RLC",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD B",       1, ""}, {"LDAX B",  1, ""},     {"DCX B",       1, ""},     {"INR C",   1, ""},        {"DCR C",        1, ""},        {"MVI C",   2, ""},       {"RRC",     1, ""}, // 0X00
-/* 0X10 */  {"(UNDOC) NOP", 1, ""}, {"LXI D,",  3, "D16"}, {"STAX D",  1, ""},    {"INX D",   1, ""},         {"INR D",   1, ""},        {"DCR D",       1, ""}, {"MVI D",   2, ""},    {"RAL",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD D",       1, ""}, {"LDAX D",  1, ""},     {"DCX D",       1, ""},     {"INR E",   1, ""},        {"DCR E",        1, ""},        {"MVI E",   2, ""},       {"RAR",     1, ""}, // 0X10
-/* 0X20 */  {"(UNDOC) NOP", 1, ""}, {"LXI H,",  3, "D16"}, {"SHLD",    3, "ADR"}, {"INX H",   1, ""},         {"INR H",   1, ""},        {"DCR H",       1, ""}, {"MVI H",   2, ""},    {"DAA",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD H",       1, ""}, {"LHLD",    3, "ADR"},  {"DCX H",       1, ""},     {"INR L",   1, ""},        {"DCR L",        1, ""},        {"MVI L",   2, ""},       {"CMA",     1, ""}, // 0X20
-/* 0X30 */  {"(UNDOC) NOP", 1, ""}, {"LXI SP,", 3, ""},    {"STA",     3, "ADR"}, {"INX SP",  1, ""},         {"INR M",   1, ""},        {"DCR M",       1, ""}, {"MVI M",   2, ""},    {"STC",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD SP",      1, ""}, {"LDA",     3, "ADR"},  {"DCX SP",      1, ""},     {"INR A",   1, ""},        {"DCR A",        1, ""},        {"MVI A",   2, ""},       {"CMC",     1, ""}, // 0X30
+            // 0x00                 0x01                   0x02                   0x03                        0x04                       0x05                    0x06                   0x07                0x08                    0x09                    0x0A                    0x0B                        0x0C                       0x0D                            0x0E                       0x0F            //
+/* 0X00 */  {"NOP",         1, ""}, {"LXI B",  3, "D16"}, {"STAX B",  1, ""},    {"INX B",   1, ""},         {"INR B",   1, ""},        {"DCR B",       1, ""}, {"MVI B",   2, "D8"},    {"RLC",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD B",       1, ""}, {"LDAX B",  1, ""},     {"DCX B",       1, ""},     {"INR C",   1, ""},        {"DCR C",        1, ""},        {"MVI C",   2, ""},       {"RRC",     1, ""}, // 0X00
+/* 0X10 */  {"(UNDOC) NOP", 1, ""}, {"LXI D",  3, "D16"}, {"STAX D",  1, ""},    {"INX D",   1, ""},         {"INR D",   1, ""},        {"DCR D",       1, ""}, {"MVI D",   2, "D8"},    {"RAL",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD D",       1, ""}, {"LDAX D",  1, ""},     {"DCX D",       1, ""},     {"INR E",   1, ""},        {"DCR E",        1, ""},        {"MVI E",   2, ""},       {"RAR",     1, ""}, // 0X10
+/* 0X20 */  {"(UNDOC) NOP", 1, ""}, {"LXI H",  3, "D16"}, {"SHLD",    3, "ADR"}, {"INX H",   1, ""},         {"INR H",   1, ""},        {"DCR H",       1, ""}, {"MVI H",   2, "D8"},    {"DAA",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD H",       1, ""}, {"LHLD",    3, "ADR"},  {"DCX H",       1, ""},     {"INR L",   1, ""},        {"DCR L",        1, ""},        {"MVI L",   2, ""},       {"CMA",     1, ""}, // 0X20
+/* 0X30 */  {"(UNDOC) NOP", 1, ""}, {"LXI SP", 3, ""},    {"STA",     3, "ADR"}, {"INX SP",  1, ""},         {"INR M",   1, ""},        {"DCR M",       1, ""}, {"MVI M",   2, "D8"},    {"STC",     1, ""}, {"(UNDOC) NOP", 1, ""}, {"DAD SP",      1, ""}, {"LDA",     3, "ADR"},  {"DCX SP",      1, ""},     {"INR A",   1, ""},        {"DCR A",        1, ""},        {"MVI A",   2, ""},       {"CMC",     1, ""}, // 0X30
 /* 0X40 */  {"MOV B,B",     1, ""}, {"MOV B,C", 1, ""},    {"MOV B,D", 1, ""},    {"MOV B,E", 1, ""},         {"MOV B,H", 1, ""},        {"MOV B,L",     1, ""}, {"MOV B,M", 1, ""},    {"MOV B,A", 1, ""}, {"MOV C,B",     1, ""}, {"MOV C,C",     1, ""}, {"MOV C,D", 1, ""},     {"MOV C,E",     1, ""},     {"MOV C,H", 1, ""},        {"MOV C,L",      1, ""},        {"MOV C,M", 1, ""},       {"MOV C,A", 1, ""}, // 0X40
 /* 0X50 */  {"MOV D,B",     1, ""}, {"MOV D,C", 1, ""},    {"MOV D,D", 1, ""},    {"MOV D,E", 1, ""},         {"MOV D,H", 1, ""},        {"MOV D,L",     1, ""}, {"MOV D,M", 1, ""},    {"MOV D,A", 1, ""}, {"MOV E,B",     1, ""}, {"MOV E,C",     1, ""}, {"MOV E,D", 1, ""},     {"MOV E,E",     1, ""},     {"MOV E,H", 1, ""},        {"MOV E,L",      1, ""},        {"MOV E,M", 1, ""},       {"MOV E,A", 1, ""}, // 0X50
 /* 0X60 */  {"MOV H,B",     1, ""}, {"MOV H,C", 1, ""},    {"MOV H,D", 1, ""},    {"MOV H,E", 1, ""},         {"MOV H,H", 1, ""},        {"MOV H,L",     1, ""}, {"MOV H,M", 1, ""},    {"MOV H,A", 1, ""}, {"MOV L,B",     1, ""}, {"MOV L,C",     1, ""}, {"MOV L,D", 1, ""},     {"MOV L,E",     1, ""},     {"MOV L,H", 1, ""},        {"MOV L,L",      1, ""},        {"MOV L,M", 1, ""},       {"MOV L,A", 1, ""}, // 0X60
@@ -42,7 +53,6 @@ public:
 /* 0XF0 */  {"RP",          1, ""}, {"POP PSW", 1, ""},    {"JP",      3, "ADR"}, {"DI",      1, ""},         {"CP",      3, "ADR"},     {"PUSH PSW",    1, ""}, {"ORI",  2, "D8"},     {"RST 6",   1, ""}, {"RM",          1, ""}, {"SPHL",        1, ""}, {"JM",      3, "ADR"},  {"EI",          1, ""},     {"CM ",     3, "ADR"},     {"(UNDOC) CALL", 1, ""},        {"CPI",     2, "D8"},     {"RST 7",   1, ""}, // 0XF0
             // 0x00         0x01                   0x02                   0x03                    0x04                   0x05                0x06               0x07            0x08            0x09            0x0A                   0x0B                    0x0C                   0x0D                   0x0E                  0x0F            //
         };
-
         // clang-format on
 
         return instructions[opcode];
@@ -51,76 +61,39 @@ public:
 public:
     Disassembler(const uint8_t* memory, size_t size) : _memory(memory), _memsize(size) {};
 
-    Result translate() {
-        if (_prgCounter >= _memsize)
-            return { _prgCounter, "EOF", 0, {0}};
+    DisassembleResult disassemble() {
+        if (_prgCounter >= _memsize) {
+            return {_prgCounter, 0, {0}, nullptr, true};
+        }
 
-        uint8_t opcode = memRead(_prgCounter);
+        uint8_t opcode = memread(_prgCounter);
 
-        Instruction instruction = getInstruction(opcode);
+        DisassembleResult res = {};
 
-        Result res = {};
+        res.instruction = &getInstruction(opcode);
 
-        std::string mnemonic = instruction.mnemonic;
+        if (_prgCounter + res.instruction->length > _memsize) {
+            return { _prgCounter, 0, {0},  nullptr, true};
+        }
 
         res.address = _prgCounter;
+        res.bytesCount = res.instruction->length;
         res.bytes[0] = opcode;
-        res.bytesCount = instruction.length;
+        res.bytes[1] = (res.bytesCount > 1) ? memread(_prgCounter + 1) : 0;
+        res.bytes[2] = (res.bytesCount > 2) ? memread(_prgCounter + 2) : 0;
 
-        mnemonic += " ";
-        for (int i = 1; i < instruction.length; i++) {
-            int index = _prgCounter + instruction.length - i;
-            if (index >= _memsize)
-                break;
-
-            res.bytes[i] = memRead(_prgCounter + i);
-
-            char value[8];
-            sprintf(value, "%02X", memRead(index));
-            mnemonic += std::string(value);
-        }
-
-        res.instruction = toUpper(mnemonic) + (instruction.length != 1 ? "h" : "");
-
-        _prgCounter += instruction.length;
-
-        return res;
-    }
-
-    std::string translateOld() { return std::string(translate().instruction); }
-
-    std::vector<uint8_t> getBytes() {
-        std::vector<uint8_t> res;
-
-        uint8_t opcode = memRead(_prgCounter);
-
-        Instruction instruction = getInstruction(opcode);
-        for (int i = 0; i < instruction.length; i++) {
-            res.push_back(memRead(_prgCounter + i));
-        }
+        _prgCounter += res.bytesCount;
 
         return res;
     }
 
     void reset() { _prgCounter = 0; }
-    void reset(uint16_t prgCounter) { _prgCounter = prgCounter; }
 
-    uint16_t getPgCounter() { return _prgCounter; }
-
-    bool isEof() { return _prgCounter >= 0x1000; }
-
+    uint16_t getPgCounter() const { return _prgCounter; }
 private:
     const uint8_t* _memory;
     size_t _memsize;
     uint16_t _prgCounter = 0x0000;
 
-    uint8_t memRead(uint16_t adr) { return _memory[adr]; }
-
-    std::string toUpper(const std::string src) {
-        std::string result = src;
-
-        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-
-        return result;
-    }
+    uint8_t memread(uint16_t adr) { return _memory[adr]; }
 };

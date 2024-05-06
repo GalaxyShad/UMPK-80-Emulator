@@ -141,14 +141,14 @@ public:
         
         Disassembler disasm(memory, size);
 
-        Disassembler::Result dis;
-        while ((dis = disasm.translate()).bytesCount != 0) {
+        Disassembler::DisassembleResult dis{};
+        while (!(dis = disasm.disassemble()).eof) {
             for (int i = 0; i < dis.bytesCount; i++) {
                 m_listing.push_back(
                     UiListingLine {
                         (uint16_t)(labelStart + dis.address + i), 
                         dis.bytes[i],
-                        i == 0 ? dis.instruction : "-"
+                        i == 0 ? dis.toString() : "-"
                     }
                 );
             }

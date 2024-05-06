@@ -35,7 +35,9 @@ public:
     uint16_t getProgramCounter() const       { return _prgCounter; }
     void     setProgramCounter(uint16_t adr) { _prgCounter = adr;  };
 
-    uint8_t         getRegisterFlags() const        { return _packPsw(_regFlag); } 
+    uint8_t         getRegisterFlags() const        { return _packPsw(_regFlag); }
+    void            setRegisterFlags(uint8_t data)  { _regFlag = _unpackPsw(data); }
+
     CpuFlagsMapping getFlags() const                { return _regFlag;  }
     void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
 
@@ -61,9 +63,8 @@ public:
         if (rstNum < 8 && rstNum >= 0) _call(rstNum * 8, true);
     }
 
-    void interruptCall(uint16_t adr) {
-        if (_enableInterrupts) _call(adr);
-    }
+    void forceCall(uint16_t adr) { _call(adr); }
+    void forceJump(uint16_t adr) { _jmp(adr); }
 
 private:
     Bus&        _bus;

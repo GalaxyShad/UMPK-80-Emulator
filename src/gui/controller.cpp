@@ -8,13 +8,15 @@ void Controller::decompileToFile(std::string filename, uint16_t fromAdr,
 
     Disassembler dis(getRom() + fromAdr, len);
 
-    dis.reset(fromAdr);
+    dis.reset();
 
     for (int i = 0; i < len; i++) {
-        std::vector<uint8_t> mc = dis.getBytes();
+        auto disres = dis.disassemble();
+
+        auto mc = std::vector<uint8_t>(disres.bytes, disres.bytes + disres.bytesCount);
         uint16_t adr = dis.getPgCounter();
 
-        std::string instr = dis.translateOld();
+        std::string instr = dis.disassemble().toString();
 
         stream << std::hex << std::uppercase << std::setw(4)
                << std::setfill('0') << adr << " | ";

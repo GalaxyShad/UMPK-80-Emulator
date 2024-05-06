@@ -1,7 +1,9 @@
 .vscode
 build/
 lib/
+.idea
 docs/
 CMakeCache.txt
 .clangd
 .cache/
+cmake-build-debug/

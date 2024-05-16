@@ -1,5 +1,6 @@
 #include "cpu.hpp"
 
+#include <_types/_uint16_t.h>
 #include <assert.h>
 
 // Nop instruction
@@ -462,15 +463,17 @@ void Cpu::_pchl() {
     _prgCounter = (_regH << 8) | _regL;
 }
 
+void Cpu::_jmp(uint16_t adr, bool cond) {
+    if (!cond) return;
 
-void Cpu::_jmp(bool cond) { 
+    _prgCounter = adr; 
+}
+
+void Cpu::_jmp(bool cond) {
     uint8_t  lowAdr = _memoryRead();
     uint16_t adr    = (_memoryRead() << 8) | lowAdr;
     
-    if (!cond) return;
-
-    _prgCounter = adr;
-    
+    _jmp(adr, cond);
 }
 
 void Cpu::_jmp()    { _jmp(true);                  }

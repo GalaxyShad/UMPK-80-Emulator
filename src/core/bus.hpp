@@ -42,8 +42,8 @@ class Bus {
             memcpy(_memory, buff, size);
         }
 
-        void loadRam(const uint8_t* buff, size_t size) {
-            memcpy(_memory + ROM_SIZE, buff, size);
+        void loadRam(const uint8_t* buff, size_t size, size_t ramShift = 0) {
+            memcpy(_memory + ROM_SIZE + ramShift, buff, size);
         }
 
         void portBindOut(uint8_t port, BusDeviceWritable& device) {

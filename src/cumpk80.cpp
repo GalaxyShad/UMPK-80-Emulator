@@ -223,7 +223,7 @@ void UMPK80_MemoryWrite(UMPK80_t umpk, uint16_t adr, uint8_t data) {
 }
 
 void UMPK80_LoadProgram(UMPK80_t umpk, const uint8_t* program, uint16_t programSize, uint16_t dstAddress) {
-    inst(umpk)->getBus().loadRam(program + dstAddress, programSize);
+    inst(umpk)->getBus().loadRam(program, programSize, dstAddress);
 }
 
 const UMPK80_Instruction_t* UMPK80_GetInstruction(uint8_t code) {

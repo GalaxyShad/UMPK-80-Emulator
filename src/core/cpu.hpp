@@ -207,6 +207,7 @@ private:
 
     // Jump instructions
     void _pchl();
+    void _jmp(uint16_t adr, bool cond = true);
     void _jmp(bool cond = true);
     void _jmp();
     void _jc();

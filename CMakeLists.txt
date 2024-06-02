@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(ImGui-SFML)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(umpk-80-emu-ui ${SOURCES}
-        src/core/utils.h)
+        src/gui/disassemble-result-to-string.cpp)
 
 target_link_libraries(umpk-80-emu-ui PRIVATE sfml-audio sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)
@@ -47,6 +47,14 @@ if(WIN32)
         PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${SFML_SOURCE_DIR}/extlibs/bin/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x64,x86>/openal32.dll $<TARGET_FILE_DIR:umpk-80-emu-ui>
         VERBATIM)
 endif()
+
+add_custom_command(
+    TARGET umpk-80-emu-ui
+    COMMENT "Copy default layout (imgui.ini)"
+    PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini
+        $<TARGET_FILE_DIR:umpk-80-emu-ui>/
+    VERBATIM)
 
 add_custom_command(
     TARGET umpk-80-emu-ui

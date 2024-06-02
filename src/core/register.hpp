@@ -7,18 +7,18 @@ class RegisterScanDevice : public BusDeviceReadable, public BusDeviceWritable {
     public:
         RegisterScanDevice(Display& disp) : _disp(disp) {}
 
-        uint8_t busPortRead()               { return  _data; }
-        void    busPortWrite(uint8_t data)  {  _data = data; _disp.lightup(_data); }
+        u8      busPortRead()          { return  _data; }
+        void    busPortWrite(u8 data)  {  _data = data; _disp.lightup(_data); }
     private:
-        uint8_t _data = 0xFF;
+        u8 _data = 0xFF;
         Display& _disp;
 
 };
 
 class RegisterDevice : public BusDeviceReadable, public BusDeviceWritable {
     public:
-        uint8_t busPortRead()               { return  _data; }
-        void    busPortWrite(uint8_t data)  {  _data = data; }
+        u8      busPortRead()          { return  _data; }
+        void    busPortWrite(u8 data)  {  _data = data; }
     private:
-        uint8_t _data = 0xFF;
+        u8 _data = 0xFF;
 };

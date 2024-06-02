@@ -1,9 +1,6 @@
 #pragma once
 
-#include <algorithm>
-#include <string>
-#include <vector>
-#include "utils.h"
+#include "inttypes.hpp"
 
 class Disassembler {
 public:
@@ -14,24 +11,14 @@ public:
     };
 
     struct DisassembleResult {
-        uint16_t address;
-        uint8_t bytesCount;
-        uint8_t bytes[3];
+        u16 address;
+        u8 bytesCount;
+        u8 bytes[3];
         const Instruction* instruction;
         bool eof;
-
-        std::string toString() {
-            switch (bytesCount) {
-                case 1: return {instruction->mnemonic};
-                case 2: return formatedString("%s %02Xh", instruction->mnemonic, bytes[1]);
-                case 3: return formatedString("%s %02X%02Xh", instruction->mnemonic, bytes[2], bytes[1]);
-
-                default: return "-";
-            }
-        }
     };
 
-    static const Instruction& getInstruction(uint8_t opcode) {
+    static const Instruction& getInstruction(u8 opcode) {
         // clang-format off
         static const Instruction instructions[256] = {
             // 0x00                 0x01                   0x02                   0x03                        0x04                       0x05                    0x06                   0x07                0x08                    0x09                    0x0A                    0x0B                        0x0C                       0x0D                            0x0E                       0x0F            //
@@ -59,14 +46,14 @@ public:
     }
 
 public:
-    Disassembler(const uint8_t* memory, size_t size) : _memory(memory), _memsize(size) {};
+    Disassembler(const u8* memory, u64 size) : _memory(memory), _memsize(size) {};
 
     DisassembleResult disassemble() {
         if (_prgCounter >= _memsize) {
             return {_prgCounter, 0, {0}, nullptr, true};
         }
 
-        uint8_t opcode = memread(_prgCounter);
+        u8 opcode = memread(_prgCounter);
 
         DisassembleResult res = {};
 
@@ -89,11 +76,11 @@ public:
 
     void reset() { _prgCounter = 0; }
 
-    uint16_t getPgCounter() const { return _prgCounter; }
+    u16 getPgCounter() const { return _prgCounter; }
 private:
-    const uint8_t* _memory;
-    size_t _memsize;
-    uint16_t _prgCounter = 0x0000;
+    const u8* _memory;
+    u64 _memsize;
+    u16 _prgCounter = 0x0000;
 
-    uint8_t memread(uint16_t adr) { return _memory[adr]; }
+    u8 memread(u16 adr) { return _memory[adr]; }
 };

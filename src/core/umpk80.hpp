@@ -10,7 +10,7 @@
 
 class RegisterControlStep : public BusDeviceWritable {
 public:
-    void busPortWrite(uint8_t data) { turnOnStepExec(); }
+    void busPortWrite(u8 data) { turnOnStepExec(); }
 
     bool isStepExec() { return _isStepExec; }
 
@@ -23,7 +23,7 @@ private:
 
 class Umpk80 {
 private:
-    const uint16_t SAVPC = 0x0BDC;
+    const u16 SAVPC = 0x0BDC;
 public:
     Umpk80()
         : _intel8080(_bus), _keyboard(_registerScan), _registerScan(_display) {
@@ -49,10 +49,10 @@ public:
         PSWA,
     };
 
-    void port5InSet(uint8_t data) { _register5In.busPortWrite(data); }
-    uint8_t port5InGet() { return _register5In.busPortRead(); }
+    void port5InSet(u8 data) { _register5In.busPortWrite(data); }
+    u8 port5InGet() { return _register5In.busPortRead(); }
 
-    uint8_t port5OutGet() { return _register5Out.busPortRead(); }
+    u8 port5OutGet() { return _register5Out.busPortRead(); }
 
     void tick() {
         if (!_registerStepExec.isStepExec()) {
@@ -97,41 +97,41 @@ public:
 
     bool getKeyState(KeyboardKey key) { return _keyboard.isKeyPressed(key); }
 
-    uint8_t getDisplayDigit(int digit) { return _display.get(digit); }
+    u8 getDisplayDigit(int digit) { return _display.get(digit); }
 
-    void loadOS(const uint8_t *os) { _bus.loadRom(os, UMPK80_OS_SIZE); }
+    void loadOS(const u8 *os) { _bus.loadRom(os, UMPK80_OS_SIZE); }
 
-    uint16_t getRegisterPair(RegisterPair regPair) {
-        uint8_t low  = _bus.memoryRead(SAVPC + (uint16_t)regPair * 2);
-        uint8_t high = _bus.memoryRead(SAVPC + (uint16_t)regPair * 2 + 1);
+    u16 getRegisterPair(RegisterPair regPair) {
+        u8 low  = _bus.memoryRead(SAVPC + (u16)regPair * 2);
+        u8 high = _bus.memoryRead(SAVPC + (u16)regPair * 2 + 1);
 
-        return ((uint16_t)high << 8) | low;
+        return ((u16)high << 8) | low;
     }
 
-    void setRegisterPair(RegisterPair regPair, uint16_t value) {
-        uint16_t adrlow  = SAVPC + (uint16_t)regPair * 2;
-        uint16_t adrhigh = SAVPC + (uint16_t)regPair * 2 + 1;
+    void setRegisterPair(RegisterPair regPair, u16 value) {
+        u16 adrlow  = SAVPC + (u16)regPair * 2;
+        u16 adrhigh = SAVPC + (u16)regPair * 2 + 1;
 
         _bus.memoryWrite(adrlow,  value & 0xFF);
         _bus.memoryWrite(adrhigh, (value >> 8) & 0xFF);
     }
 
-    uint8_t getRegister(Register reg) {
+    u8 getRegister(Register reg) {
         if (reg == Register::M) {
-            uint16_t hl = getRegisterPair(RegisterPair::HL);
+            u16 hl = getRegisterPair(RegisterPair::HL);
             return _bus.memoryRead(hl);
         }
 
-        return _bus.memoryRead(SAVPC + (uint16_t)reg);
+        return _bus.memoryRead(SAVPC + (u16)reg);
     }
 
-    void setRegister(Register reg, uint8_t value) {
+    void setRegister(Register reg, u8 value) {
         if (reg == Register::M) {
             // TODO Handle it somehow?
             return;
         }
 
-        _bus.memoryWrite(SAVPC + (uint16_t)reg, value);
+        _bus.memoryWrite(SAVPC + (u16)reg, value);
     }
 
     Cpu &getCpu() { return _intel8080; }
@@ -151,17 +151,17 @@ private:
     RegisterControlStep _registerStepExec;
 public:
 #ifdef EMULATE_OLD_UMPK
-    const uint8_t PORT_SPEAKER = 0x04;
-    const uint8_t PORT_IO = 0x05;
-    const uint8_t PORT_KEYBOARD = 0x18;
-    const uint8_t PORT_DISPLAY = 0x38;
-    const uint8_t PORT_SCAN = 0x28;
+    const u8 PORT_SPEAKER = 0x04;
+    const u8 PORT_IO = 0x05;
+    const u8 PORT_KEYBOARD = 0x18;
+    const u8 PORT_DISPLAY = 0x38;
+    const u8 PORT_SCAN = 0x28;
 #else
-    const uint8_t PORT_SPEAKER  = 0x04;
-    const uint8_t PORT_IO       = 0x05;
-    const uint8_t PORT_KEYBOARD = 0x06;
-    const uint8_t PORT_DISPLAY  = 0x06;
-    const uint8_t PORT_SCAN     = 0x07;
+    const u8 PORT_SPEAKER  = 0x04;
+    const u8 PORT_IO       = 0x05;
+    const u8 PORT_KEYBOARD = 0x06;
+    const u8 PORT_DISPLAY  = 0x06;
+    const u8 PORT_SCAN     = 0x07;
 #endif
 private:
     void _bindDevices() {

@@ -24,7 +24,7 @@ class Keyboard : public BusDeviceReadable {
 public:
     Keyboard(RegisterScanDevice &scan) : _scan(scan) {}
 
-    uint8_t busPortRead() override { return scan(_scan.busPortRead()); }
+    u8 busPortRead() override { return scan(_scan.busPortRead()); }
 
     void setKeyState(KeyboardKey key, bool state) { _keys[(int)key] = state; }
 
@@ -34,9 +34,9 @@ public:
     void keyPress(KeyboardKey key) { setKeyState(key, true); }
     void keyRelease(KeyboardKey key) { setKeyState(key, false); }
 
-    uint8_t scan(uint8_t scanValue) {
+    u8 scan(u8 scanValue) {
 
-        uint8_t s, i;
+        u8 s, i;
         for (s = 0x80, i = 0;
              ((s & ~scanValue) == 0) && (i < KEYBOARD_ROWS_COUNT);
              s = (s >> 1), i++)
@@ -46,13 +46,13 @@ public:
     }
 
 private:
-    uint8_t _scanRow(int row) {
+    u8 _scanRow(int row) {
         int index = row * KEYBOARD_COLUMNS_COUNT;
 
         for (int i = index;
              (i < index + KEYBOARD_COLUMNS_COUNT) && (i < KEYBOARD_KEYS_COUNT);
              i++) {
-            uint8_t value = 0b1 << (i % KEYBOARD_COLUMNS_COUNT);
+            u8 value = 0b1 << (i % KEYBOARD_COLUMNS_COUNT);
 
             if (_keys[i])
                 return ~value;

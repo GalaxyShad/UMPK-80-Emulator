@@ -11,6 +11,7 @@
 
 #include "../../controller.hpp"
 #include "../irenderable.hpp"
+#include "../../disassemble-result-to-string.hpp"
 
 struct UiListingLine {
     uint16_t address;
@@ -148,7 +149,7 @@ public:
                     UiListingLine {
                         (uint16_t)(labelStart + dis.address + i), 
                         dis.bytes[i],
-                        i == 0 ? dis.toString() : "-"
+                        i == 0 ? disassembleResultToString(dis) : "-"
                     }
                 );
             }

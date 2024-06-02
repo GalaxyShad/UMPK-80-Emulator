@@ -1,14 +1,9 @@
 #pragma once
 
 #include "bus.hpp"
-#include <cstdint>
 
-// TODO DAA instruction
-// TODO fix auxcarry flag
-// TODO Correct store Flags in stack
-// TODO Add no documented instructions +
 struct CpuFlagsMapping { 
-    uint8_t sign: 1, 
+    u8 sign: 1,
             zero: 1, 
             :1, 
             auxcarry: 1, 
@@ -26,17 +21,17 @@ public:
     void    reset();
     bool    isHold() const { return _hold; };
 
-    uint8_t  getCommandRegister() const   { return _regCmd;       }
-    uint16_t getAdressRegister()  const   { return _regAdr;       }
+    u8  getCommandRegister() const   { return _regCmd;       }
+    u16 getAdressRegister()  const   { return _regAdr;       }
 
-    uint16_t getStackPointer() const         { return _stackPointer; }
-    void     setStackPointer(uint16_t sp)    { _stackPointer = sp;   }
+    u16 getStackPointer() const         { return _stackPointer; }
+    void     setStackPointer(u16 sp)    { _stackPointer = sp;   }
     
-    uint16_t getProgramCounter() const       { return _prgCounter; }
-    void     setProgramCounter(uint16_t adr) { _prgCounter = adr;  };
+    u16 getProgramCounter() const       { return _prgCounter; }
+    void     setProgramCounter(u16 adr) { _prgCounter = adr;  };
 
-    uint8_t         getRegisterFlags() const        { return _packPsw(_regFlag); }
-    void            setRegisterFlags(uint8_t data)  { _regFlag = _unpackPsw(data); }
+    u8         getRegisterFlags() const        { return _packPsw(_regFlag); }
+    void            setRegisterFlags(u8 data)  { _regFlag = _unpackPsw(data); }
 
     CpuFlagsMapping getFlags() const                { return _regFlag;  }
     void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
@@ -48,23 +43,23 @@ public:
         M, A
     };
 
-    uint8_t A() { return getRegister(Register::A); }
-    uint8_t B() { return getRegister(Register::B); }
-    uint8_t C() { return getRegister(Register::C); }
-    uint8_t D() { return getRegister(Register::D); }
-    uint8_t E() { return getRegister(Register::E); }
-    uint8_t H() { return getRegister(Register::H); }
-    uint8_t L() { return getRegister(Register::L); }
+    u8 A() { return getRegister(Register::A); }
+    u8 B() { return getRegister(Register::B); }
+    u8 C() { return getRegister(Register::C); }
+    u8 D() { return getRegister(Register::D); }
+    u8 E() { return getRegister(Register::E); }
+    u8 H() { return getRegister(Register::H); }
+    u8 L() { return getRegister(Register::L); }
 
-    uint8_t getRegister(Register reg) const         { return _getRegData((uint8_t)reg); }
-    void    setRegister(Register reg, uint8_t data) { return _setRegData((uint8_t)reg, data); }
+    u8 getRegister(Register reg) const         { return _getRegData((u8)reg); }
+    void    setRegister(Register reg, u8 data) { return _setRegData((u8)reg, data); }
 
     void interruptRst(int rstNum) {
         if (rstNum < 8 && rstNum >= 0) _call(rstNum * 8, true);
     }
 
-    void forceCall(uint16_t adr) { _call(adr); }
-    void forceJump(uint16_t adr) { _jmp(adr); }
+    void forceCall(u16 adr) { _call(adr); }
+    void forceJump(u16 adr) { _jmp(adr); }
 
 private:
     Bus&        _bus;
@@ -74,21 +69,21 @@ private:
     bool        _hold              = false;
     bool        _interruptsEnabled = false;
 
-    uint8_t     _regCmd         = 0x00;
-    uint16_t    _regAdr         = 0x0000;
-    uint16_t    _prgCounter     = 0x0000;
-    uint16_t    _stackPointer   = 0xFFFF;
+    u8     _regCmd         = 0x00;
+    u16    _regAdr         = 0x0000;
+    u16    _prgCounter     = 0x0000;
+    u16    _stackPointer   = 0xFFFF;
 
-    uint8_t     _regA = 0x00, _regT = 0x00;
-    uint8_t     _regB = 0x00, _regC = 0x00;
-    uint8_t     _regD = 0x00, _regE = 0x00;
-    uint8_t     _regH = 0x00, _regL = 0x00;
+    u8     _regA = 0x00, _regT = 0x00;
+    u8     _regB = 0x00, _regC = 0x00;
+    u8     _regD = 0x00, _regE = 0x00;
+    u8     _regH = 0x00, _regL = 0x00;
 
-    uint8_t*    _registers[8] = {
+    u8*    _registers[8] = {
         &_regB, &_regC, 
         &_regD, &_regE, 
         &_regH, &_regL, 
-        NULL,   &_regA, 
+        nullptr,&_regA,
     };
 
     CpuFlagsMapping _regFlag;
@@ -117,30 +112,30 @@ private:
 
     // Machine cycles
     void        _readCommand();
-    void        _readCommand(uint8_t opcode);
+    void        _readCommand(u8 opcode);
 
-    void        _memoryWrite(uint8_t data);
-    uint8_t     _memoryRead();
+    void        _memoryWrite(u8 data);
+    u8     _memoryRead();
 
-    void        _stackPush(uint16_t data);
-    uint16_t    _stackPop();
+    void        _stackPush(u16 data);
+    u16    _stackPop();
 
-    void        _portWrite(uint8_t port, uint8_t data);
-    uint8_t     _portRead(uint8_t port);
+    void        _portWrite(u8 port, u8 data);
+    u8     _portRead(u8 port);
 
-    uint8_t         _packPsw(CpuFlagsMapping flags) const;
-    CpuFlagsMapping _unpackPsw(uint8_t psw) const;
+    u8         _packPsw(CpuFlagsMapping flags) const;
+    CpuFlagsMapping _unpackPsw(u8 psw) const;
 
     // Register operations
-    uint8_t     _getRegData(uint8_t regCode) const;
-    void        _setRegData(uint8_t regCode, uint8_t data);
+    u8     _getRegData(u8 regCode) const;
+    void        _setRegData(u8 regCode, u8 data);
 
-    uint16_t    _getRegPairData(uint8_t regPairCode);
-    void        _setRegPairData(uint8_t regPairCode, uint16_t data);
-    void        _setRegPairData(uint8_t regPairCode, uint8_t dataA, uint8_t dataB);
+    u16    _getRegPairData(u8 regPairCode);
+    void        _setRegPairData(u8 regPairCode, u16 data);
+    void        _setRegPairData(u8 regPairCode, u8 dataA, u8 dataB);
 
     // Utility
-    void        _updateFlagsState(uint16_t result);
+    void        _updateFlagsState(u16 result);
 
     // Nop instruction
     void _nop();
@@ -207,7 +202,7 @@ private:
 
     // Jump instructions
     void _pchl();
-    void _jmp(uint16_t adr, bool cond = true);
+    void _jmp(u16 adr, bool cond = true);
     void _jmp(bool cond = true);
     void _jmp();
     void _jc();
@@ -220,7 +215,7 @@ private:
     void _jpo();
 
     // Call instructions
-    void _call(uint16_t adr, bool cond = true);
+    void _call(u16 adr, bool cond = true);
     void _call(bool cond = true);
     void _call();
     void _cc();

@@ -1,7 +1,5 @@
 #include "gui-app.hpp"
 #include "gui-app-compact.hpp"
-#include "../core/cpu.hpp"
-#include "../core/bus.hpp"
 #include <cstdint>
 
 enum {

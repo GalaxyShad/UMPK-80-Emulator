@@ -1,4 +1,5 @@
 #include "controller.hpp"
+#include "disassemble-result-to-string.hpp"
 #include <fstream>
 #include <iomanip>
 
@@ -16,7 +17,7 @@ void Controller::decompileToFile(std::string filename, uint16_t fromAdr,
         auto mc = std::vector<uint8_t>(disres.bytes, disres.bytes + disres.bytesCount);
         uint16_t adr = dis.getPgCounter();
 
-        std::string instr = dis.disassemble().toString();
+        std::string instr = disassembleResultToString(dis.disassemble());
 
         stream << std::hex << std::uppercase << std::setw(4)
                << std::setfill('0') << adr << " | ";

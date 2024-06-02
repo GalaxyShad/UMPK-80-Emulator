@@ -2,15 +2,13 @@
 
 #include "bus.hpp"
 
-#include <iostream>
-
 class Display : public BusDeviceWritable {
 public:
-    void busPortWrite(uint8_t data) { _lastSegmentValue = data; }
+    void busPortWrite(u8 data) { _lastSegmentValue = data; }
 
-    void lightup(uint8_t digitValue) {
+    void lightup(u8 digitValue) {
         int digit = 0;
-        uint8_t i;
+        u8 i;
 
         // Blinking fix
         if (digitValue != 0b100000 && digitValue != 0b010000 &&
@@ -31,7 +29,7 @@ public:
         _lightoffTimer = 255;
     }
 
-    uint8_t get(uint8_t digit) { 
+    u8 get(u8 digit) {
         _lightoffTimer--;
 
         if (_lightoffTimer <= 0) {
@@ -43,7 +41,7 @@ public:
     };
 
 private:
-    uint8_t _digits[6] = {0};
-    uint8_t _lastSegmentValue = 0x00;
+    u8 _digits[6] = {0};
+    u8 _lastSegmentValue = 0x00;
     int _lightoffTimer = 0;
 };

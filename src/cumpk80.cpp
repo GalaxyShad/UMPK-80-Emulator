@@ -251,5 +251,5 @@ void UMPK80_I8080DisassemblerReset(UMPK80_I8080Disassembler_t disasm) {
 }
 
 u16 UMPK80_I8080DisassemblerPG(UMPK80_I8080Disassembler_t disasm) {
-    ((Disassembler*)disasm)->getPgCounter();
+    return ((Disassembler*)disasm)->getPgCounter();
 }

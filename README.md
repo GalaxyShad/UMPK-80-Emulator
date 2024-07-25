@@ -85,6 +85,9 @@ Build using CMake:
 cmake -S . -B build
 cmake --build build --config Release
 ```
+## Media
+![33](https://github.com/user-attachments/assets/48c12932-f516-477a-b5ab-4b9d892b20ac)
+
 
 ## Real-life Photo
 

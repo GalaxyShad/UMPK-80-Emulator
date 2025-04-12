@@ -10,8 +10,8 @@
 // #define EMULATE_OLD_UMPK
 
 #include "../core/disassembler.hpp"
-#include "../core/dj.hpp"
 #include "../core/umpk80.hpp"
+#include "dj.hpp"
 
 #include "gui-app-base.hpp"
 
@@ -21,13 +21,22 @@
 #define OS_FILE "./data/scaned-os-fixed.bin"
 #endif
 
+#include <iostream>
+
+struct PrinterSoundPlayer : public ISoundPlayerObserver {
+    void tone(const i64 *samples, int samplesSize) override {
+        ui_sound::tone(std::vector<i64>(samples, samples + samplesSize));
+    }
+};
+
 class Controller {
 public:
     const uint16_t UMPK_ROM_SIZE = 0x800;
 
 public:
-    Controller(GuiAppBase& gui)
-        : _umpkThread(&Controller::_umpkWork, this), _disasm(nullptr, 0), _gui(gui) {}
+    Controller(GuiAppBase &gui)
+        : _umpkThread(&Controller::_umpkWork, this), _disasm(nullptr, 0),
+          _gui(gui) {}
 
     ~Controller() {
         _umpkMutex.lock();
@@ -59,11 +68,11 @@ public:
 
     void setMemory(uint16_t index, uint8_t data);
 
-    uint16_t getSystemPG() { 
+    uint16_t getSystemPG() {
         uint16_t high = _umpk.getBus().memoryRead(0xBBF);
-        uint8_t  low  = _umpk.getBus().memoryRead(0xBBE);
+        uint8_t low = _umpk.getBus().memoryRead(0xBBE);
 
-        return (high << 8) | low; 
+        return (high << 8) | low;
     }
 
     void setCommand(uint8_t cmd) {
@@ -90,18 +99,19 @@ public:
     const uint8_t *getRam() { return &(_umpk.getBus().ramFirst()); }
     const uint8_t *getRom() { return &(_umpk.getBus().romFirst()); }
 
-    // FIXME 
+    // FIXME
     int breakpoint = -1;
 
 private:
-    GuiAppBase& _gui;
+    GuiAppBase &_gui;
 
     Umpk80 _umpk;
     Disassembler _disasm;
-    Dj dj;
 
     std::thread _umpkThread;
     std::mutex _umpkMutex;
+
+    PrinterSoundPlayer soundPlayer_;
 
     bool _isUmpkFreezed = true;
     bool _isUmpkWorking = true;

@@ -154,7 +154,7 @@ void Controller::_handleHooks(Cpu &cpu) {
         uint8_t duration = cpu.getRegister(Cpu::Register::D);
         uint8_t frequency = 0xFF - cpu.getRegister(Cpu::Register::B);
 
-        dj.tone(frequency * 2, duration * 130);
+//        dj.tone(frequency * 2, duration * 130);
     }
 
     if (pgCounter == DELAY_FUNC_ADR) {
@@ -169,7 +169,9 @@ void Controller::_handleHooks(Cpu &cpu) {
 void Controller::_umpkWork() {
     _umpkMutex.lock();
     _loadSystem();
+    _umpk.attachSoundPlayer(soundPlayer_);
     _umpkMutex.unlock();
+
 
     while (_isUmpkWorking) {
         if (_isUmpkFreezed)
@@ -181,8 +183,8 @@ void Controller::_umpkWork() {
 
         _handleHooks(_umpk.getCpu());
 
-        if (breakpoint == _umpk.getCpu().getProgramCounter())
-            _isUmpkFreezed = true;
+//        if (breakpoint == _umpk.getCpu().getProgramCounter())
+//            _isUmpkFreezed = true;
     }
 }
 

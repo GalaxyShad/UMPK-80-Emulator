@@ -2,46 +2,34 @@
 
 #include "bus.hpp"
 
-struct CpuFlagsMapping { 
-    u8 sign: 1,
-            zero: 1, 
-            :1, 
-            auxcarry: 1, 
-            :1,  
-            parity: 1, 
-            :1, 
-            carry: 1; 
+struct CpuFlagsMapping {
+    u8 sign : 1, zero : 1, : 1, auxcarry : 1, : 1, parity : 1, : 1, carry : 1;
 };
 
 class Cpu {
 public:
-    Cpu(Bus& bus);
+    Cpu(Bus &bus);
 
-    void    tick();
-    void    reset();
-    bool    isHold() const { return _hold; };
+    void tick();
+    void reset();
+    bool isHold() const { return _hold; };
 
-    u8  getCommandRegister() const   { return _regCmd;       }
-    u16 getAdressRegister()  const   { return _regAdr;       }
+    u8 getCommandRegister() const { return _regCmd; }
+    u16 getAdressRegister() const { return _regAdr; }
 
-    u16 getStackPointer() const         { return _stackPointer; }
-    void     setStackPointer(u16 sp)    { _stackPointer = sp;   }
-    
-    u16 getProgramCounter() const       { return _prgCounter; }
-    void     setProgramCounter(u16 adr) { _prgCounter = adr;  };
+    u16 getStackPointer() const { return _stackPointer; }
+    void setStackPointer(u16 sp) { _stackPointer = sp; }
 
-    u8         getRegisterFlags() const        { return _packPsw(_regFlag); }
-    void            setRegisterFlags(u8 data)  { _regFlag = _unpackPsw(data); }
+    u16 getProgramCounter() const { return _prgCounter; }
+    void setProgramCounter(u16 adr) { _prgCounter = adr; };
 
-    CpuFlagsMapping getFlags() const                { return _regFlag;  }
-    void            setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
+    u8 getRegisterFlags() const { return _packPsw(_regFlag); }
+    void setRegisterFlags(u8 data) { _regFlag = _unpackPsw(data); }
 
-    enum class Register {
-        B, C,
-        D, E,
-        H, L,
-        M, A
-    };
+    CpuFlagsMapping getFlags() const { return _regFlag; }
+    void setFlags(CpuFlagsMapping flags) { _regFlag = flags; }
+
+    enum class Register { B, C, D, E, H, L, M, A };
 
     u8 A() { return getRegister(Register::A); }
     u8 B() { return getRegister(Register::B); }
@@ -51,46 +39,51 @@ public:
     u8 H() { return getRegister(Register::H); }
     u8 L() { return getRegister(Register::L); }
 
-    u8 getRegister(Register reg) const         { return _getRegData((u8)reg); }
-    void    setRegister(Register reg, u8 data) { return _setRegData((u8)reg, data); }
+    u8 getRegister(Register reg) const { return _getRegData((u8)reg); }
+    void setRegister(Register reg, u8 data) {
+        return _setRegData((u8)reg, data);
+    }
 
     void interruptRst(int rstNum) {
-        if (rstNum < 8 && rstNum >= 0) _call(rstNum * 8, true);
+        if (rstNum < 8 && rstNum >= 0)
+            _call(rstNum * 8, true);
     }
 
     void forceCall(u16 adr) { _call(adr); }
     void forceJump(u16 adr) { _jmp(adr); }
 
+    i64 ticks() const { return _ticks; }
+
 private:
-    Bus&        _bus;
+    Bus &_bus;
 
-    bool        _enableInterrupts  = false;
+    bool _enableInterrupts = false;
 
-    bool        _hold              = false;
-    bool        _interruptsEnabled = false;
+    bool _hold = false;
+    bool _interruptsEnabled = false;
 
-    u8     _regCmd         = 0x00;
-    u16    _regAdr         = 0x0000;
-    u16    _prgCounter     = 0x0000;
-    u16    _stackPointer   = 0xFFFF;
+    u8 _regCmd = 0x00;
+    u16 _regAdr = 0x0000;
+    u16 _prgCounter = 0x0000;
+    u16 _stackPointer = 0xFFFF;
 
-    u8     _regA = 0x00, _regT = 0x00;
-    u8     _regB = 0x00, _regC = 0x00;
-    u8     _regD = 0x00, _regE = 0x00;
-    u8     _regH = 0x00, _regL = 0x00;
+    u8 _regA = 0x00, _regT = 0x00;
+    u8 _regB = 0x00, _regC = 0x00;
+    u8 _regD = 0x00, _regE = 0x00;
+    u8 _regH = 0x00, _regL = 0x00;
 
-    u8*    _registers[8] = {
-        &_regB, &_regC, 
-        &_regD, &_regE, 
-        &_regH, &_regL, 
-        nullptr,&_regA,
+    u8 *_registers[8] = {
+        &_regB, &_regC, &_regD, &_regE, &_regH, &_regL, nullptr, &_regA,
     };
 
+    i64 _ticks = 0;
+
     CpuFlagsMapping _regFlag;
-    
-    typedef void (Cpu::*instructionFunction_t)(void); 
+
+    // clang-format off
+    typedef void (Cpu::*instructionFunction_t)(void);
     const instructionFunction_t _instructions[256] = {
-        //  0x00         0x01         0x02         0x03         0x04         0x05         0x06         0x07         0x08         0x09         0x0A         0x0B         0x0C         0x0D         0x0E         0x0F        //     
+        //  0x00         0x01         0x02         0x03         0x04         0x05         0x06         0x07         0x08         0x09         0x0A         0x0B         0x0C         0x0D         0x0E         0x0F        //
 /* 0x00 */  &Cpu::_nop,  &Cpu::_lxi,  &Cpu::_stax, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rlc,  &Cpu::_nop,  &Cpu::_dad,  &Cpu::_ldax, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rrc, // 0x00
 /* 0x10 */  &Cpu::_nop,  &Cpu::_lxi,  &Cpu::_stax, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_ral,  &Cpu::_nop,  &Cpu::_dad,  &Cpu::_ldax, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_rar, // 0x10
 /* 0x20 */  &Cpu::_nop,  &Cpu::_lxi,  &Cpu::_shld, &Cpu::_inx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_daa,  &Cpu::_nop,  &Cpu::_dad,  &Cpu::_lhld, &Cpu::_dcx,  &Cpu::_inr,  &Cpu::_dcr,  &Cpu::_mvi,  &Cpu::_cma, // 0x20
@@ -107,35 +100,36 @@ private:
 /* 0xD0 */  &Cpu::_rnc,  &Cpu::_pop,  &Cpu::_jnc,  &Cpu::_out,  &Cpu::_cnc,  &Cpu::_push, &Cpu::_sui,  &Cpu::_rst,  &Cpu::_rc,   &Cpu::_ret,  &Cpu::_jc,   &Cpu::_in,   &Cpu::_cc,   &Cpu::_call, &Cpu::_sbi,  &Cpu::_rst, // 0xD0
 /* 0xE0 */  &Cpu::_rpo,  &Cpu::_pop,  &Cpu::_jpo,  &Cpu::_xthl, &Cpu::_cpo,  &Cpu::_push, &Cpu::_ani,  &Cpu::_rst,  &Cpu::_rpe,  &Cpu::_pchl, &Cpu::_jpe,  &Cpu::_xchg, &Cpu::_cpe,  &Cpu::_call, &Cpu::_xri,  &Cpu::_rst, // 0xE0
 /* 0xF0 */  &Cpu::_rp,   &Cpu::_pop,  &Cpu::_jp,   &Cpu::_di,   &Cpu::_cp,   &Cpu::_push, &Cpu::_ori,  &Cpu::_rst,  &Cpu::_rm,   &Cpu::_sphl, &Cpu::_jm,   &Cpu::_ei,   &Cpu::_cm,   &Cpu::_call, &Cpu::_cpi,  &Cpu::_rst, // 0xF0
-        //  0x00         0x01         0x02         0x03         0x04         0x05         0x06         0x07         0x08         0x09         0x0A         0x0B         0x0C         0x0D         0x0E         0x0F        // 
+        //  0x00         0x01         0x02         0x03         0x04         0x05         0x06         0x07         0x08         0x09         0x0A         0x0B         0x0C         0x0D         0x0E         0x0F        //
     };
+    // clang-format on
 
     // Machine cycles
-    void        _readCommand();
-    void        _readCommand(u8 opcode);
+    void _readCommand();
+    void _readCommand(u8 opcode);
 
-    void        _memoryWrite(u8 data);
-    u8     _memoryRead();
+    void _memoryWrite(u8 data);
+    u8 _memoryRead();
 
-    void        _stackPush(u16 data);
-    u16    _stackPop();
+    void _stackPush(u16 data);
+    u16 _stackPop();
 
-    void        _portWrite(u8 port, u8 data);
-    u8     _portRead(u8 port);
+    void _portWrite(u8 port, u8 data);
+    u8 _portRead(u8 port);
 
-    u8         _packPsw(CpuFlagsMapping flags) const;
+    u8 _packPsw(CpuFlagsMapping flags) const;
     CpuFlagsMapping _unpackPsw(u8 psw) const;
 
     // Register operations
-    u8     _getRegData(u8 regCode) const;
-    void        _setRegData(u8 regCode, u8 data);
+    u8 _getRegData(u8 regCode) const;
+    void _setRegData(u8 regCode, u8 data);
 
-    u16    _getRegPairData(u8 regPairCode);
-    void        _setRegPairData(u8 regPairCode, u16 data);
-    void        _setRegPairData(u8 regPairCode, u8 dataA, u8 dataB);
+    u16 _getRegPairData(u8 regPairCode);
+    void _setRegPairData(u8 regPairCode, u16 data);
+    void _setRegPairData(u8 regPairCode, u8 dataA, u8 dataB);
 
     // Utility
-    void        _updateFlagsState(u16 result);
+    void _updateFlagsState(u16 result);
 
     // Nop instruction
     void _nop();
@@ -227,7 +221,7 @@ private:
     void _cpe();
     void _cpo();
 
-    // Return instructions 
+    // Return instructions
     void _ret(bool cond = true);
     void _ret();
     void _rc();

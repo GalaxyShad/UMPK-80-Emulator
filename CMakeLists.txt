@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(umpk-80-emu-ui LANGUAGES CXX)
 
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -36,7 +35,6 @@ target_compile_features(umpk-80-emu-ui PRIVATE cxx_std_11)
 
 target_compile_definitions(umpk-80-emu-ui
     PRIVATE
-        # If the debug configuration pass the DEBUG define to the compiler 
         $<$<CONFIG:Debug>:DEBUG>
 )
 

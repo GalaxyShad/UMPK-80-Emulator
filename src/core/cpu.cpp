@@ -6,6 +6,7 @@ Cpu::Cpu(Bus& bus) : _bus(bus) {
 
 void Cpu::tick() {
     _readCommand();
+    _ticks++;
 }
 
 void Cpu::reset() {

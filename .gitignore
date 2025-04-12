@@ -7,3 +7,4 @@ CMakeCache.txt
 .clangd
 .cache/
 cmake-build-debug/
+cmake-build-release/

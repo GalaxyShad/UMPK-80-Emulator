@@ -43,13 +43,13 @@ public:
         m_components.push_back(std::make_pair("Stack", new UiStack(m_controller)));
     }
 
-    virtual ~GuiApp() {
+    ~GuiApp() override {
         for (auto& i : m_components) {
             delete i.second;
         }
     }
 
-    void start() {
+    void start() override {
         init();
 
         while (m_window.isOpen()) {
